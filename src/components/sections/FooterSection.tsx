@@ -1,9 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { MouseEvent } from "react";
 
 const FooterSection = () => {
   const navigate = useNavigate();
+
+  const handleGroomClick = (e: MouseEvent<HTMLSpanElement>) => {
+    e.preventDefault();
+    navigate("/editor");
+  };
   
   const { data: invitation } = useQuery({
     queryKey: ["invitation"],
@@ -22,13 +28,20 @@ const FooterSection = () => {
       <div className="max-w-4xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
           <div className="space-y-2">
-            <p 
-              onClick={() => navigate("/editor")}
-              className="text-lg font-medium cursor-pointer"
-              style={{ textDecoration: "none" }}
+            <span 
+              onClick={handleGroomClick}
+              className="text-lg font-medium cursor-pointer block"
+              style={{ 
+                textDecoration: 'none',
+                color: 'inherit'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.textDecoration = 'none';
+                e.currentTarget.style.color = 'inherit';
+              }}
             >
               신랑 {invitation?.couple_groom || "김철수"}
-            </p>
+            </span>
             <p className="text-lg font-medium">
               신부 {invitation?.couple_bride || "이영희"}
             </p>

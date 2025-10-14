@@ -73,7 +73,7 @@ const MessageSection = () => {
   return (
     <section className="py-20 px-4">
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-light text-center mb-12">
+        <h2 className="text-3xl md:text-4xl font-light text-center mb-12 font-serif">
           바람에 맡긴 당신의 한마디
         </h2>
 
@@ -143,7 +143,7 @@ const MessageSection = () => {
           />
           <Input
             type="password"
-            placeholder="비밀번호"
+            placeholder="비밀번호(수정용)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
@@ -154,7 +154,7 @@ const MessageSection = () => {
             rows={4}
           />
           <Button type="submit" className="w-full">
-            메시지 등록
+            메시지 보내기
           </Button>
         </form>
       </div>
