@@ -6,29 +6,12 @@ interface FlipUnitProps {
 }
 
 const FlipUnit = ({ value, label }: FlipUnitProps) => {
-  const [displayValue, setDisplayValue] = useState(value);
-  const [isFlipping, setIsFlipping] = useState(false);
-
-  useEffect(() => {
-    if (value !== displayValue) {
-      setIsFlipping(true);
-      setTimeout(() => {
-        setDisplayValue(value);
-        setIsFlipping(false);
-      }, 300);
-    }
-  }, [value, displayValue]);
-
   const formattedValue = String(value).padStart(2, "0");
 
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="relative w-16 h-20 md:w-20 md:h-24">
-        <div
-          className={`absolute inset-0 bg-card border border-border rounded-lg shadow-md flex items-center justify-center transition-transform duration-300 ${
-            isFlipping ? "animate-[flip_0.3s_ease-in-out]" : ""
-          }`}
-        >
+        <div className="absolute inset-0 bg-card border border-border rounded-lg shadow-md flex items-center justify-center transition-opacity duration-200">
           <span className="text-3xl md:text-4xl font-mono font-bold">
             {formattedValue}
           </span>

@@ -65,7 +65,7 @@ const Editor = () => {
       }
 
       toast.success("로그인 성공");
-      navigate("/editor/dashboard");
+      navigate("/");
     } catch (error: any) {
       const errorMessage = error.message === "Invalid login credentials" 
         ? "아이디 또는 비밀번호가 올바르지 않습니다."

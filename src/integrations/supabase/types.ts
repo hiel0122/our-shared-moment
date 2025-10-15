@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          media_id: string | null
+          password_hash: string
+          writer: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          media_id?: string | null
+          password_hash: string
+          writer: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          media_id?: string | null
+          password_hash?: string
+          writer?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitation: {
         Row: {
           couple_bride: string
