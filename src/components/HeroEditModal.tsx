@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -14,7 +13,26 @@ interface HeroEditModalProps {
 
 const HeroEditModal = ({ open, onOpenChange, onSave }: HeroEditModalProps) => {
   const [youtubeUrl, setYoutubeUrl] = useState("");
-  const [uploading, setUploading] = useState(false);
+  const [heroLine2, setHeroLine2] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      loadCurrentData();
+    }
+  }, [open]);
+
+  const loadCurrentData = async () => {
+    const { data } = await supabase
+      .from("invitation")
+      .select("hero_video_url, hero_line2")
+      .single();
+    
+    if (data) {
+      setYoutubeUrl(data.hero_video_url || "");
+      setHeroLine2(data.hero_line2 || "");
+    }
+  };
 
   const extractYoutubeId = (url: string) => {
     const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
@@ -22,35 +40,38 @@ const HeroEditModal = ({ open, onOpenChange, onSave }: HeroEditModalProps) => {
     return match && match[7].length === 11 ? match[7] : null;
   };
 
-  const handleYoutubeSave = () => {
-    const videoId = extractYoutubeId(youtubeUrl);
-    if (!videoId) {
-      toast.error("올바른 YouTube URL을 입력해주세요.");
-      return;
-    }
-    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&controls=0&playlist=${videoId}`;
-    onSave(embedUrl);
-    onOpenChange(false);
-    toast.success("배경 영상이 설정되었습니다.");
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("video/")) {
-      toast.error("동영상 파일만 업로드 가능합니다.");
-      return;
-    }
-
-    setUploading(true);
+  const handleSave = async () => {
+    setLoading(true);
     try {
-      // Note: Storage bucket creation would be needed
-      toast.error("스토리지 버킷이 필요합니다. YouTube 링크를 사용해주세요.");
+      let embedUrl = "";
+      
+      if (youtubeUrl) {
+        const videoId = extractYoutubeId(youtubeUrl);
+        if (!videoId) {
+          toast.error("올바른 YouTube URL을 입력해주세요.");
+          setLoading(false);
+          return;
+        }
+        embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&controls=0&playlist=${videoId}`;
+      }
+
+      const { error } = await supabase
+        .from("invitation")
+        .update({
+          hero_video_url: embedUrl,
+          hero_line2: heroLine2,
+        })
+        .eq("id", (await supabase.from("invitation").select("id").single()).data?.id);
+
+      if (error) throw error;
+
+      onSave(embedUrl);
+      onOpenChange(false);
+      toast.success("변경사항이 저장되었습니다.");
     } catch (error) {
-      toast.error("업로드에 실패했습니다.");
+      toast.error("저장에 실패했습니다.");
     } finally {
-      setUploading(false);
+      setLoading(false);
     }
   };
 
@@ -58,35 +79,33 @@ const HeroEditModal = ({ open, onOpenChange, onSave }: HeroEditModalProps) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Hero 배경 영상 편집</DialogTitle>
+          <DialogTitle>Hero 섹션 편집</DialogTitle>
         </DialogHeader>
-        <Tabs defaultValue="youtube" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="youtube">YouTube 링크</TabsTrigger>
-            <TabsTrigger value="upload">파일 업로드</TabsTrigger>
-          </TabsList>
-          <TabsContent value="youtube" className="space-y-4">
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              YouTube URL
+            </label>
             <Input
               placeholder="YouTube URL을 입력하세요"
               value={youtubeUrl}
               onChange={(e) => setYoutubeUrl(e.target.value)}
             />
-            <Button onClick={handleYoutubeSave} className="w-full">
-              저장
-            </Button>
-          </TabsContent>
-          <TabsContent value="upload" className="space-y-4">
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              하단 텍스트
+            </label>
             <Input
-              type="file"
-              accept="video/*"
-              onChange={handleFileUpload}
-              disabled={uploading}
+              placeholder="예: 2026년 12월 5일, 우리가 마주보는 시간"
+              value={heroLine2}
+              onChange={(e) => setHeroLine2(e.target.value)}
             />
-            <p className="text-sm text-muted-foreground">
-              {uploading ? "업로드 중..." : "동영상 파일을 선택하세요"}
-            </p>
-          </TabsContent>
-        </Tabs>
+          </div>
+          <Button onClick={handleSave} disabled={loading} className="w-full">
+            {loading ? "저장 중..." : "저장"}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -73,7 +73,7 @@ const MessageSection = () => {
   return (
     <section className="py-20 px-4">
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-light text-center mb-12 font-serif">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 font-serif">
           바람에 맡긴 당신의 한마디
         </h2>
 

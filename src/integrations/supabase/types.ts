@@ -57,6 +57,7 @@ export type Database = {
           hero_line1: string
           hero_line2: string
           hero_line3: string
+          hero_video_url: string | null
           id: string
           updated_at: string
           wedding_at: string
@@ -68,6 +69,7 @@ export type Database = {
           hero_line1?: string
           hero_line2?: string
           hero_line3?: string
+          hero_video_url?: string | null
           id?: string
           updated_at?: string
           wedding_at?: string
@@ -79,6 +81,7 @@ export type Database = {
           hero_line1?: string
           hero_line2?: string
           hero_line3?: string
+          hero_video_url?: string | null
           id?: string
           updated_at?: string
           wedding_at?: string
@@ -87,26 +90,32 @@ export type Database = {
       }
       media_assets: {
         Row: {
+          author_name: string | null
           content: string | null
           created_at: string
           id: string
           sort_order: number
+          title: string | null
           type: Database["public"]["Enums"]["media_type"]
           url: string | null
         }
         Insert: {
+          author_name?: string | null
           content?: string | null
           created_at?: string
           id?: string
           sort_order?: number
+          title?: string | null
           type: Database["public"]["Enums"]["media_type"]
           url?: string | null
         }
         Update: {
+          author_name?: string | null
           content?: string | null
           created_at?: string
           id?: string
           sort_order?: number
+          title?: string | null
           type?: Database["public"]["Enums"]["media_type"]
           url?: string | null
         }
