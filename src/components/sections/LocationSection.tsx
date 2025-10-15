@@ -35,11 +35,11 @@ const LocationSection = () => {
           </div>
           <div className="aspect-video bg-muted rounded-lg overflow-hidden border border-border">
             <iframe
-              src="https://naver.me/FYqM2ci0"
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3260.223520187968!2d128.57263261200765!3d35.20090097263242!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x356f2de6dcbeb74f%3A0x38c8a521bb676bab!2z7Iqk7Lm07J2067ew7Zi47YWUIOybqOuUqe2ZgA!5e0!3m2!1sko!2skr!4v1760432121042!5m2!1sko!2skr"
+              style={{ border: 0, width: '100%', height: '100%' }}
+              allowFullScreen
               loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
               title="웨딩홀 위치"
             />
           </div>

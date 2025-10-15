@@ -17,12 +17,39 @@ const Editor = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // Try to sign in first
+      let { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      // If user doesn't exist and trying to login with admin credentials, create account
+      if (error && email === "admin@admin.com" && password === "123456") {
+        const { error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/editor/dashboard`,
+          },
+        });
+
+        if (signUpError) throw signUpError;
+
+        // Try to sign in again after signup
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError) throw signInError;
+        data = signInData;
+      } else if (error) {
+        throw error;
+      }
+
+      if (!data?.user) {
+        throw new Error("로그인에 실패했습니다");
+      }
 
       // Check if user is admin
       const { data: profile } = await supabase
@@ -40,7 +67,10 @@ const Editor = () => {
       toast.success("로그인 성공");
       navigate("/editor/dashboard");
     } catch (error: any) {
-      toast.error(error.message || "로그인에 실패했습니다");
+      const errorMessage = error.message === "Invalid login credentials" 
+        ? "아이디 또는 비밀번호가 올바르지 않습니다."
+        : error.message || "로그인에 실패했습니다";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -78,7 +108,7 @@ const Editor = () => {
           </form>
           <div className="mt-4 text-sm text-muted-foreground text-center">
             <p>기본 계정: admin@admin.com</p>
-            <p>비밀번호: 1234</p>
+            <p>비밀번호: 123456</p>
           </div>
         </CardContent>
       </Card>
