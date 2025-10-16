@@ -42,19 +42,41 @@ const HeroSection = () => {
     checkAdmin();
   }, []);
 
-  // Typing animation
+  // Typing animation with two phases
   useEffect(() => {
-    const fullText = invitation?.hero_line1 || "우리, 마주서다.";
+    const firstText = "우리, 결혼합니다";
+    const secondText = invitation?.hero_line1 || "우리, 마주보다.";
     let currentIndex = 0;
+    let isTyping = true;
+    let isFirstPhase = true;
 
     const typingInterval = setInterval(() => {
-      if (currentIndex <= fullText.length) {
-        setDisplayedText(fullText.slice(0, currentIndex));
-        currentIndex++;
+      if (isFirstPhase) {
+        if (isTyping && currentIndex <= firstText.length) {
+          setDisplayedText(firstText.slice(0, currentIndex));
+          currentIndex++;
+        } else if (isTyping && currentIndex > firstText.length) {
+          setTimeout(() => {
+            isTyping = false;
+            currentIndex = firstText.length;
+          }, 800);
+        } else if (!isTyping && currentIndex > 0) {
+          currentIndex--;
+          setDisplayedText(firstText.slice(0, currentIndex));
+        } else if (!isTyping && currentIndex === 0) {
+          isFirstPhase = false;
+          isTyping = true;
+          currentIndex = 0;
+        }
       } else {
-        clearInterval(typingInterval);
+        if (currentIndex <= secondText.length) {
+          setDisplayedText(secondText.slice(0, currentIndex));
+          currentIndex++;
+        } else {
+          clearInterval(typingInterval);
+        }
       }
-    }, 100);
+    }, 130);
 
     return () => clearInterval(typingInterval);
   }, [invitation?.hero_line1]);
@@ -120,9 +142,7 @@ const HeroSection = () => {
       <div className="text-center space-y-8 max-w-4xl relative z-10">
         <h1 className="text-3xl md:text-7xl font-bold tracking-wide font-serif">
           {displayedText}
-          {displayedText.length === (invitation?.hero_line1 || "우리, 마주서다.").length && (
-            <span className={`ml-1 ${showCursor ? "opacity-100" : "opacity-0"}`}>|</span>
-          )}
+          <span className={`ml-1 ${showCursor ? "opacity-100" : "opacity-0"}`}>|</span>
         </h1>
         <p className="text-xl md:text-3xl font-serif font-semibold tracking-wide">
           {invitation?.hero_line2 || "2026년 12월 5일, 우리가 마주보는 시간"}

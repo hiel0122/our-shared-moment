@@ -94,6 +94,7 @@ export type Database = {
           content: string | null
           created_at: string
           id: string
+          likes_count: number | null
           sort_order: number
           title: string | null
           type: Database["public"]["Enums"]["media_type"]
@@ -104,6 +105,7 @@ export type Database = {
           content?: string | null
           created_at?: string
           id?: string
+          likes_count?: number | null
           sort_order?: number
           title?: string | null
           type: Database["public"]["Enums"]["media_type"]
@@ -114,6 +116,7 @@ export type Database = {
           content?: string | null
           created_at?: string
           id?: string
+          likes_count?: number | null
           sort_order?: number
           title?: string | null
           type?: Database["public"]["Enums"]["media_type"]

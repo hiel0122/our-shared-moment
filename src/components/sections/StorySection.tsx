@@ -24,11 +24,13 @@ const StorySection = () => {
   const queryClient = useQueryClient();
   const [selectedMedia, setSelectedMedia] = useState<any>(null);
   const [commentForm, setCommentForm] = useState({ writer: "", password: "", content: "" });
-  const [likes, setLikes] = useState<Record<string, boolean>>({});
   const [isAdmin, setIsAdmin] = useState(false);
   const [editingMedia, setEditingMedia] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showAddPost, setShowAddPost] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [editingPost, setEditingPost] = useState<{ id: string; title: string; content: string } | null>(null);
+  const itemsPerPage = 6;
 
   const { data: mediaAssets } = useQuery({
     queryKey: ["media_assets", "image"],
@@ -87,19 +89,41 @@ const StorySection = () => {
   }));
 
   const displayItems = mediaAssets && mediaAssets.length > 0 ? mediaAssets : placeholders;
+  const totalPages = Math.ceil(displayItems.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedItems = displayItems.slice(startIndex, startIndex + itemsPerPage);
 
-  const handleLike = (mediaId: string) => {
-    const storageKey = `like_${mediaId}`;
-    const hasLiked = localStorage.getItem(storageKey);
-    
-    if (hasLiked) {
-      localStorage.removeItem(storageKey);
-      setLikes(prev => ({ ...prev, [mediaId]: false }));
-    } else {
-      localStorage.setItem(storageKey, "true");
-      setLikes(prev => ({ ...prev, [mediaId]: true }));
-    }
-  };
+  const toggleLike = useMutation({
+    mutationFn: async (mediaId: string) => {
+      const item = mediaAssets?.find(m => m.id === mediaId);
+      if (!item) return;
+
+      const storageKey = `like_${mediaId}`;
+      const hasLiked = localStorage.getItem(storageKey);
+      const newCount = hasLiked ? (item.likes_count || 0) - 1 : (item.likes_count || 0) + 1;
+
+      const { error } = await supabase
+        .from("media_assets")
+        .update({ likes_count: Math.max(0, newCount) })
+        .eq("id", mediaId);
+
+      if (error) throw error;
+
+      if (hasLiked) {
+        localStorage.removeItem(storageKey);
+      } else {
+        localStorage.setItem(storageKey, "true");
+      }
+
+      return { mediaId, hasLiked: !hasLiked };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["media_assets", "image"] });
+    },
+    onError: () => {
+      toast.error("좋아요 처리에 실패했습니다.");
+    },
+  });
 
   const handleComment = (item: any) => {
     setSelectedMedia(item);
@@ -177,6 +201,7 @@ const StorySection = () => {
           type: "image",
           author_name: "신랑♥신부",
           sort_order: 0,
+          likes_count: 0,
         });
 
       if (insertError) throw insertError;
@@ -188,6 +213,43 @@ const StorySection = () => {
     },
     onError: () => {
       toast.error("게시물 추가에 실패했습니다.");
+    },
+  });
+
+  const updatePost = useMutation({
+    mutationFn: async ({ id, title, content }: { id: string; title: string; content: string }) => {
+      const { error } = await supabase
+        .from("media_assets")
+        .update({ title, content })
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("게시물이 수정되었습니다.");
+      setEditingPost(null);
+      queryClient.invalidateQueries({ queryKey: ["media_assets", "image"] });
+    },
+    onError: () => {
+      toast.error("게시물 수정에 실패했습니다.");
+    },
+  });
+
+  const deletePost = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("media_assets")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("게시물이 삭제되었습니다.");
+      queryClient.invalidateQueries({ queryKey: ["media_assets", "image"] });
+    },
+    onError: () => {
+      toast.error("게시물 삭제에 실패했습니다.");
     },
   });
 
@@ -233,8 +295,8 @@ const StorySection = () => {
     <>
       <section className="py-4">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl md:text-4xl font-bold font-serif">
+          <div className="flex flex-col items-center mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold font-serif text-center mb-6">
               우리, 마주보기 전엔...
             </h2>
             {isAdmin && (
@@ -249,7 +311,7 @@ const StorySection = () => {
             )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {displayItems.slice(0, 6).map((item) => (
+            {paginatedItems.map((item) => (
               <div
                 key={item.id}
                 className="bg-card rounded-lg overflow-hidden shadow-sm transition-all duration-200 hover:brightness-105"
@@ -263,9 +325,39 @@ const StorySection = () => {
                       <AvatarImage src="/placeholder.svg" />
                       <AvatarFallback>💑</AvatarFallback>
                     </Avatar>
-                    <span className="font-semibold text-sm">{item.author_name || "신랑♥신부"}</span>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-sm">{item.author_name || "신랑♥신부"}</span>
+                      {item.title && <span className="text-xs text-muted-foreground">{item.title}</span>}
+                    </div>
                   </div>
-                  <MoreVertical size={18} className="text-muted-foreground" />
+                  {isAdmin && !item.id.startsWith("placeholder") && (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingPost({ id: item.id, title: item.title || "", content: item.content || "" });
+                        }}
+                      >
+                        <Edit size={14} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm("정말 삭제하시겠습니까?")) {
+                            deletePost.mutate(item.id);
+                          }
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Image */}
@@ -304,17 +396,21 @@ const StorySection = () => {
 
                 {/* Actions */}
                 <div className="p-3 space-y-2">
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 items-center">
                     <button
-                      onClick={() => handleLike(item.id)}
+                      onClick={() => !item.id.startsWith("placeholder") && toggleLike.mutate(item.id)}
                       className="hover:scale-110 transition-transform"
                       aria-label="좋아요"
+                      disabled={item.id.startsWith("placeholder")}
                     >
                       <Heart
                         size={24}
-                        className={likes[item.id] || localStorage.getItem(`like_${item.id}`) ? "fill-red-500 text-red-500" : ""}
+                        className={localStorage.getItem(`like_${item.id}`) ? "fill-red-500 text-red-500" : ""}
                       />
                     </button>
+                    {!item.id.startsWith("placeholder") && (
+                      <span className="text-sm font-semibold">{item.likes_count || 0}개</span>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -354,6 +450,23 @@ const StorySection = () => {
               </div>
             ))}
           </div>
+          
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-2 mt-8">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(page)}
+                  className="w-10 h-10"
+                >
+                  {page}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -379,15 +492,11 @@ const StorySection = () => {
                     <AvatarImage src="/placeholder.svg" />
                     <AvatarFallback>💑</AvatarFallback>
                   </Avatar>
-                  <span className="font-semibold">{selectedMedia?.author_name || "신랑♥신부"}</span>
+                  <div className="flex flex-col">
+                    <span className="font-semibold">{selectedMedia?.author_name || "신랑♥신부"}</span>
+                    {selectedMedia?.title && <span className="text-xs text-muted-foreground">{selectedMedia.title}</span>}
+                  </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSelectedMedia(null)}
-                >
-                  <X size={20} />
-                </Button>
               </div>
 
               {/* Content */}
@@ -441,6 +550,17 @@ const StorySection = () => {
                   )}
                 </div>
               </ScrollArea>
+
+              {/* Like Count */}
+              <div className="border-t p-4">
+                <div className="flex items-center gap-2">
+                  <Heart
+                    size={24}
+                    className={localStorage.getItem(`like_${selectedMedia?.id}`) ? "fill-red-500 text-red-500" : ""}
+                  />
+                  <span className="font-semibold text-sm">좋아요 {selectedMedia?.likes_count || 0}개</span>
+                </div>
+              </div>
 
               {/* Comment Form */}
               <div className="border-t p-4 space-y-2">
@@ -496,6 +616,37 @@ const StorySection = () => {
                 disabled={addNewPost.isPending}
               />
             </label>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Post Dialog */}
+      <Dialog open={!!editingPost} onOpenChange={() => setEditingPost(null)}>
+        <DialogContent>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">게시물 수정</h3>
+            <Input
+              placeholder="타이틀"
+              value={editingPost?.title || ""}
+              onChange={(e) => setEditingPost(editingPost ? { ...editingPost, title: e.target.value } : null)}
+            />
+            <Textarea
+              placeholder="내용"
+              value={editingPost?.content || ""}
+              onChange={(e) => setEditingPost(editingPost ? { ...editingPost, content: e.target.value } : null)}
+              rows={4}
+            />
+            <Button
+              onClick={() => {
+                if (editingPost) {
+                  updatePost.mutate(editingPost);
+                }
+              }}
+              disabled={updatePost.isPending}
+              className="w-full"
+            >
+              저장
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
