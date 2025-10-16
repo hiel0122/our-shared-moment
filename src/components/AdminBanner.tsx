@@ -36,10 +36,15 @@ const AdminBanner = () => {
   }, []);
 
   const handleLogout = async () => {
-    setIsAdmin(false); // Immediately hide banner
-    await supabase.auth.signOut();
-    toast.success("관리자 모드로부터 로그아웃 되었습니다.");
-    navigate("/");
+    try {
+      setIsAdmin(false); // Immediately hide banner
+      await supabase.auth.signOut();
+      toast.success("관리자 모드로부터 로그아웃 되었습니다.");
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("로그아웃 중 오류가 발생했습니다.");
+    }
   };
 
   if (!isAdmin) return null;
