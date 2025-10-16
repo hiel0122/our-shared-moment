@@ -16,9 +16,8 @@ const AdminBanner = () => {
         return;
       }
 
-      // Check if user is one of the admin emails
-      const adminEmails = ['sinrang@sinrang.com', 'sinboo@sinboo.com'];
-      const isAdminUser = adminEmails.includes(user.email || '');
+      // Check if user is admin
+      const isAdminUser = user.email === 'admin@admin.com';
       setIsAdmin(isAdminUser);
     };
 

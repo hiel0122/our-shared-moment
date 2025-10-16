@@ -49,8 +49,7 @@ const StorySection = () => {
         return;
       }
 
-      const adminEmails = ['sinrang@sinrang.com', 'sinboo@sinboo.com'];
-      const isAdminUser = adminEmails.includes(user.email || '');
+      const isAdminUser = user.email === 'admin@admin.com';
       setIsAdmin(isAdminUser);
       setAdminEmail(user.email || "");
     };
