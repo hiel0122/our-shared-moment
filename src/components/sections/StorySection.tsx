@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { Plus, X, Trash2, Heart, MessageCircle, Edit2 } from "lucide-react";
+import { Plus, Trash2, Heart, MessageCircle, Edit2, Send, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -22,16 +22,24 @@ const StorySection = () => {
   const [editingPost, setEditingPost] = useState<any>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [commenterId, setCommenterId] = useState<string>("");
+  const [actorId, setActorId] = useState<string>("");
   const itemsPerPage = 6;
 
   useEffect(() => {
-    // Generate or retrieve commenter ID for anonymous users
-    let id = localStorage.getItem('commenterId');
-    if (!id) {
-      id = crypto.randomUUID();
-      localStorage.setItem('commenterId', id);
+    // Generate or retrieve IDs for anonymous users
+    let commentId = localStorage.getItem('commenterId');
+    if (!commentId) {
+      commentId = crypto.randomUUID();
+      localStorage.setItem('commenterId', commentId);
     }
-    setCommenterId(id);
+    setCommenterId(commentId);
+
+    let visitorId = localStorage.getItem('visitorId');
+    if (!visitorId) {
+      visitorId = crypto.randomUUID();
+      localStorage.setItem('visitorId', visitorId);
+    }
+    setActorId(visitorId);
 
     const checkAdmin = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -94,6 +102,49 @@ const StorySection = () => {
       return groupedComments;
     },
   });
+
+  const { data: likesData } = useQuery({
+    queryKey: ["allLikes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("media_likes")
+        .select("*");
+      if (error) throw error;
+      
+      const groupedLikes: Record<string, any[]> = {};
+      data?.forEach((like) => {
+        if (!groupedLikes[like.media_id || '']) {
+          groupedLikes[like.media_id || ''] = [];
+        }
+        groupedLikes[like.media_id || ''].push(like);
+      });
+      
+      return groupedLikes;
+    },
+  });
+
+  // Realtime subscription for likes
+  useEffect(() => {
+    const channel = supabase
+      .channel('media-likes-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'media_likes'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["allLikes"] });
+          queryClient.invalidateQueries({ queryKey: ["mediaAssets"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const { data: comments } = useQuery({
     queryKey: ["comments", selectedMedia?.id],
@@ -171,31 +222,66 @@ const StorySection = () => {
 
   const toggleLike = useMutation({
     mutationFn: async (mediaId: string) => {
-      const media = mediaAssets?.find((m) => m.id === mediaId);
-      if (!media) return;
+      if (!actorId) {
+        throw new Error("Actor ID not initialized");
+      }
 
-      const likeKey = `liked_${mediaId}`;
-      const hasLiked = localStorage.getItem(likeKey);
-      const newCount = hasLiked ? (media.likes_count || 0) - 1 : (media.likes_count || 0) + 1;
-
-      const { error } = await supabase
-        .from("media_assets")
-        .update({ likes_count: Math.max(0, newCount) })
-        .eq("id", mediaId);
-
-      if (error) throw error;
+      // Check if already liked
+      const existingLikes = likesData?.[mediaId] || [];
+      const hasLiked = existingLikes.some(like => like.actor_id === actorId);
 
       if (hasLiked) {
-        localStorage.removeItem(likeKey);
+        // Unlike: delete the like record
+        const { error } = await supabase
+          .from("media_likes")
+          .delete()
+          .eq("media_id", mediaId)
+          .eq("actor_id", actorId);
+        
+        if (error) throw error;
       } else {
-        localStorage.setItem(likeKey, "true");
+        // Like: insert a new like record
+        const { error } = await supabase
+          .from("media_likes")
+          .insert({
+            media_id: mediaId,
+            actor_id: actorId
+          });
+        
+        if (error) throw error;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["mediaAssets"] });
+    onMutate: async (mediaId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["allLikes"] });
+      
+      // Snapshot previous value
+      const previousLikes = queryClient.getQueryData(["allLikes"]);
+      
+      // Optimistically update
+      queryClient.setQueryData(["allLikes"], (old: any) => {
+        const newLikes = { ...old };
+        const existingLikes = newLikes[mediaId] || [];
+        const hasLiked = existingLikes.some((like: any) => like.actor_id === actorId);
+        
+        if (hasLiked) {
+          newLikes[mediaId] = existingLikes.filter((like: any) => like.actor_id !== actorId);
+        } else {
+          newLikes[mediaId] = [...existingLikes, { media_id: mediaId, actor_id: actorId }];
+        }
+        
+        return newLikes;
+      });
+      
+      return { previousLikes };
     },
-    onError: () => {
+    onError: (err, mediaId, context) => {
+      // Rollback on error
+      queryClient.setQueryData(["allLikes"], context?.previousLikes);
       toast.error("좋아요 처리에 실패했습니다.");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["allLikes"] });
     },
   });
 
@@ -293,35 +379,30 @@ const StorySection = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-        {currentMediaAssets.map((media: any) => (
-          <Card 
-            key={media.id} 
-            className="overflow-hidden hover:shadow-lg transition-shadow relative"
-          >
-            <div 
-              className="cursor-pointer"
-              onClick={() => handleMediaClick(media)}
+        {currentMediaAssets.map((media: any) => {
+          const mediaLikes = likesData?.[media.id] || [];
+          const likesCount = mediaLikes.length;
+          const hasLiked = mediaLikes.some(like => like.actor_id === actorId);
+          
+          return (
+            <Card 
+              key={media.id} 
+              className="overflow-hidden hover:shadow-lg transition-shadow relative"
             >
-              {media.type === "image" && media.url && (
-                <img
-                  src={media.url}
-                  alt={media.title || "Memory"}
-                  className="w-full h-64 object-cover"
-                />
-              )}
-            </div>
-            <div className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="text-lg">
-                    {getAuthorEmoji(media.author_role)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="font-semibold text-sm">
-                  {getAuthorName(media.author_role)}
-                </span>
+              {/* Header - White bar with profile */}
+              <div className="h-14 bg-background border-b flex items-center justify-between px-4 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="text-lg">
+                      {getAuthorEmoji(media.author_role)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-semibold text-sm">
+                    {getAuthorName(media.author_role)}
+                  </span>
+                </div>
                 {isAdmin && (
-                  <div className="ml-auto flex gap-1">
+                  <div className="flex gap-1">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -344,42 +425,75 @@ const StorySection = () => {
                   </div>
                 )}
               </div>
-              
-              <div className="flex items-center gap-2 mb-2">
+
+              {/* Image - Full width */}
+              <div 
+                className="cursor-pointer"
+                onClick={() => handleMediaClick(media)}
+              >
+                {media.type === "image" && media.url && (
+                  <img
+                    src={media.url}
+                    alt={media.title || "Memory"}
+                    className="w-full aspect-square object-cover"
+                  />
+                )}
+              </div>
+
+              {/* Action Bar - Black strip */}
+              <div className="h-12 bg-black flex items-center gap-4 px-4">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-8 p-0 text-white hover:text-white/80 hover:bg-transparent"
                   onClick={() => toggleLike.mutate(media.id)}
                 >
-                  <Heart className={`h-5 w-5 ${localStorage.getItem(`liked_${media.id}`) ? 'fill-red-500 text-red-500' : ''}`} />
+                  <Heart className={`h-6 w-6 transition-all ${hasLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 p-0 text-white hover:text-white/80 hover:bg-transparent"
+                  onClick={() => handleMediaClick(media)}
+                >
+                  <MessageCircle className="h-6 w-6" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 p-0 text-white hover:text-white/80 hover:bg-transparent"
+                >
+                  <Send className="h-6 w-6" />
                 </Button>
               </div>
-              
-              <p className="text-sm font-semibold mb-2">
-                좋아요 {media.likes_count || 0} 회
-              </p>
-              
-              {media.title && (
-                <p className="text-sm">
-                  <span className="font-semibold">{getAuthorName(media.author_role)}</span>{' '}
-                  {media.title}
+
+              {/* Meta/Caption Area */}
+              <div className="p-4 space-y-1">
+                <p className="text-sm font-bold">
+                  좋아요 {likesCount} 회
                 </p>
-              )}
-              
-              {media.content && (
-                <p className="text-sm text-muted-foreground mt-1">{media.content}</p>
-              )}
-              
-              <button
-                onClick={() => handleMediaClick(media)}
-                className="text-sm text-muted-foreground mt-2 hover:text-foreground"
-              >
-                댓글 {commentsData?.[media.id]?.length || 0} 개 보기
-              </button>
-            </div>
-          </Card>
-        ))}
+                
+                {media.title && (
+                  <p className="text-sm">
+                    <span className="font-semibold">{getAuthorName(media.author_role)}</span>{' '}
+                    {media.title}
+                  </p>
+                )}
+                
+                {media.content && (
+                  <p className="text-sm text-muted-foreground">{media.content}</p>
+                )}
+                
+                <button
+                  onClick={() => handleMediaClick(media)}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  댓글 {commentsData?.[media.id]?.length || 0} 개 보기
+                </button>
+              </div>
+            </Card>
+          );
+        })}
       </div>
 
       {totalPages > 1 && (
@@ -399,6 +513,15 @@ const StorySection = () => {
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-5xl max-h-[90vh] p-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-4 top-4 z-50 rounded-full bg-black/50 text-white hover:bg-black/70"
+            onClick={() => setModalOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          
           <div className="grid md:grid-cols-2 h-full">
             <div className="bg-black flex items-center justify-center p-4">
               <img
@@ -479,11 +602,11 @@ const StorySection = () => {
                     className="h-8 w-8 p-0"
                     onClick={() => toggleLike.mutate(selectedMedia?.id)}
                   >
-                    <Heart className={`h-6 w-6 ${localStorage.getItem(`liked_${selectedMedia?.id}`) ? 'fill-red-500 text-red-500' : ''}`} />
+                    <Heart className={`h-6 w-6 ${likesData?.[selectedMedia?.id]?.some(like => like.actor_id === actorId) ? 'fill-red-500 text-red-500' : ''}`} />
                   </Button>
                 </div>
                 <p className="px-4 pb-2 text-sm font-semibold">
-                  좋아요 {selectedMedia?.likes_count || 0} 회
+                  좋아요 {likesData?.[selectedMedia?.id]?.length || 0} 회
                 </p>
                 
                 <form onSubmit={handleCommentSubmit} className="px-4 pb-4 space-y-2">
@@ -515,45 +638,45 @@ const StorySection = () => {
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>게시물 수정</DialogTitle>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              updatePost.mutate({
-                id: editingPost?.id,
-                title: formData.get("title") as string,
-                content: formData.get("content") as string,
-              });
-            }}
-            className="space-y-4"
-          >
-            <div>
-              <Label htmlFor="title">제목</Label>
-              <Input
-                id="title"
-                name="title"
-                defaultValue={editingPost?.title}
-              />
-            </div>
-            <div>
-              <Label htmlFor="content">내용</Label>
-              <Textarea
-                id="content"
-                name="content"
-                defaultValue={editingPost?.content}
-                rows={4}
-              />
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
-                취소
-              </Button>
-              <Button type="submit">저장</Button>
-            </div>
-          </form>
+          <div className="space-y-4 pt-6">
+            <h2 className="text-lg font-semibold">게시물 수정</h2>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                updatePost.mutate({
+                  id: editingPost?.id,
+                  title: formData.get("title") as string,
+                  content: formData.get("content") as string,
+                });
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <Label htmlFor="title">제목</Label>
+                <Input
+                  id="title"
+                  name="title"
+                  defaultValue={editingPost?.title}
+                />
+              </div>
+              <div>
+                <Label htmlFor="content">내용</Label>
+                <Textarea
+                  id="content"
+                  name="content"
+                  defaultValue={editingPost?.content}
+                  rows={4}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
+                  취소
+                </Button>
+                <Button type="submit">저장</Button>
+              </div>
+            </form>
+          </div>
         </DialogContent>
       </Dialog>
     </section>

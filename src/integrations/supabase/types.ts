@@ -130,6 +130,35 @@ export type Database = {
         }
         Relationships: []
       }
+      media_likes: {
+        Row: {
+          actor_id: string
+          created_at: string
+          id: string
+          media_id: string
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          id?: string
+          media_id: string
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          id?: string
+          media_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_likes_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
