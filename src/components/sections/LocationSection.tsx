@@ -16,9 +16,9 @@ const LocationSection = () => {
   });
 
   return (
-    <section className="py-20 px-4 bg-muted">
+    <section className="py-4">
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 font-serif">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-8 font-serif">
           우리, 마주서는 곳
         </h2>
         <div className="bg-background rounded-lg p-6 md:p-8 space-y-6 shadow-sm">

@@ -36,15 +36,20 @@ All colors MUST be HSL.
     --input: 0 0% 90%;
     --ring: 0 0% 0%;
 
-    --radius: 0.25rem;
+    --radius: 0.5rem;
 
     /* Korean wedding palette */
     --wedding-gold: 45 100% 50%;
     --wedding-gold-light: 45 100% 97%;
     --wedding-gray: 0 0% 60%;
+    --wedding-bg: 0 0% 98%;
     
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Shadows */
+    --shadow-soft: 0 2px 8px -2px hsl(0 0% 0% / 0.1);
+    --shadow-medium: 0 4px 16px -4px hsl(0 0% 0% / 0.15);
   }
 
   @keyframes flip {
@@ -63,11 +68,25 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[url('https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070')] bg-cover bg-center bg-fixed text-foreground;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: hsl(0 0% 100% / 0.85);
+    backdrop-filter: blur(2px);
+    z-index: -1;
   }
 
   .font-serif {
     font-family: 'Noto Serif KR', serif;
+  }
+
+  .section-block {
+    @apply bg-card/80 backdrop-blur-sm rounded-2xl shadow-[var(--shadow-medium)] border border-border/50;
   }
 }
 

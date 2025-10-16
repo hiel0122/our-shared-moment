@@ -71,9 +71,9 @@ const MessageSection = () => {
   const totalPages = Math.ceil((messages?.count || 0) / messagesPerPage);
 
   return (
-    <section className="py-20 px-4">
+    <section className="py-4">
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 font-serif">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-8 font-serif">
           바람에 맡긴 당신의 한마디
         </h2>
 
