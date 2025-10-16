@@ -40,10 +40,10 @@ const FooterSection = () => {
                 e.currentTarget.style.color = 'inherit';
               }}
             >
-              신랑 {invitation?.couple_groom || "김철수"}
+              신랑 {invitation?.couple_groom || "이학인"}
             </span>
             <p className="text-lg font-medium">
-              신부 {invitation?.couple_bride || "이영희"}
+              신부 {invitation?.couple_bride || "고다희"}
             </p>
             <p className="text-sm text-muted-foreground mt-4">
               {invitation?.hero_line3 || "6년의 만남, 그리고 새로운 시작"}

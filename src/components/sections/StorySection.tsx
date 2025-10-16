@@ -161,10 +161,10 @@ const StorySection = () => {
   });
 
   const addNewPost = useMutation({
-    mutationFn: async (newPost: { title: string; content: string; imageUrl: string }) => {
-      // Determine author_role based on admin email
-      const authorRole = adminEmail === 'sinrang@sinrang.com' ? 'groom' : 'bride';
-      const authorName = authorRole === 'groom' ? '김철수' : '이영희';
+    mutationFn: async (newPost: { title: string; content: string; imageUrl: string; authorName?: string }) => {
+      // Determine author_role based on provided author name or default
+      const authorRole = newPost.authorName === '이학인' ? 'groom' : 'bride';
+      const authorName = newPost.authorName || '이학인';
 
       const { error } = await supabase.from("media_assets").insert({
         title: newPost.title,
@@ -187,10 +187,18 @@ const StorySection = () => {
   });
 
   const updatePost = useMutation({
-    mutationFn: async ({ id, title, content }: { id: string; title: string; content: string }) => {
+    mutationFn: async ({ id, title, content, authorName }: { id: string; title: string; content: string; authorName?: string }) => {
+      const updates: any = { title, content };
+      
+      if (authorName) {
+        const authorRole = authorName === '이학인' ? 'groom' : 'bride';
+        updates.author_role = authorRole;
+        updates.author_name = authorName;
+      }
+      
       const { error } = await supabase
         .from("media_assets")
-        .update({ title, content })
+        .update(updates)
         .eq("id", id);
       if (error) throw error;
     },
@@ -357,11 +365,17 @@ const StorySection = () => {
   const currentMediaAssets = mediaAssets?.slice(startIndex, endIndex) || [];
 
   const getAuthorName = (authorRole: string) => {
-    return authorRole === 'groom' ? '김철수' : '이영희';
+    return authorRole === 'groom' ? '이학인' : '고다희';
   };
 
   const getAuthorEmoji = (authorRole: string) => {
     return authorRole === 'groom' ? '🤵' : '👰';
+  };
+
+  const getAuthorNameByName = (name: string) => {
+    if (name === '이학인') return 'groom';
+    if (name === '고다희') return 'bride';
+    return 'groom';
   };
 
   return (
@@ -369,11 +383,14 @@ const StorySection = () => {
       <h2 className="text-4xl font-bold mb-6 text-center">우리, 마주보기 전엔…</h2>
 
       {isAdmin && (
-        <div className="flex justify-center mb-6">
+        <div className="flex flex-col items-center mb-6 gap-2">
           <Button onClick={() => { /* Add post logic */ }}>
             <Plus className="mr-2 h-4 w-4" />
             게시물 추가
           </Button>
+          <p className="text-xs text-muted-foreground">
+            권장 이미지 사이즈: 1080 × 1350 (세로형), 1080 × 1080 (정사각형)
+          </p>
         </div>
       )}
 
@@ -389,7 +406,7 @@ const StorySection = () => {
               className="overflow-hidden hover:shadow-lg transition-shadow relative"
             >
               {/* Header - White bar with profile */}
-              <div className="h-14 bg-background border-b flex items-center justify-between px-4 shadow-sm">
+              <div className="h-14 bg-background border-b flex items-center justify-between px-4">
                 <div className="flex items-center gap-2">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="text-lg">
@@ -439,12 +456,12 @@ const StorySection = () => {
                 )}
               </div>
 
-              {/* Action Bar - Black strip */}
-              <div className="h-12 bg-black flex items-center gap-4 px-4">
+              {/* Action Bar - White background */}
+              <div className="h-12 bg-background border-t flex items-center gap-4 px-4">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 p-0 text-white hover:text-white/80 hover:bg-transparent"
+                  className="h-8 w-8 p-0 text-foreground/70 hover:text-foreground hover:bg-transparent"
                   onClick={() => toggleLike.mutate(media.id)}
                 >
                   <Heart className={`h-6 w-6 transition-all ${hasLiked ? 'fill-red-500 text-red-500' : ''}`} />
@@ -452,7 +469,7 @@ const StorySection = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 p-0 text-white hover:text-white/80 hover:bg-transparent"
+                  className="h-8 w-8 p-0 text-foreground/70 hover:text-foreground hover:bg-transparent"
                   onClick={() => handleMediaClick(media)}
                 >
                   <MessageCircle className="h-6 w-6" />
@@ -460,7 +477,7 @@ const StorySection = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 p-0 text-white hover:text-white/80 hover:bg-transparent"
+                  className="h-8 w-8 p-0 text-foreground/70 hover:text-foreground hover:bg-transparent"
                 >
                   <Send className="h-6 w-6" />
                 </Button>
@@ -472,16 +489,11 @@ const StorySection = () => {
                   좋아요 {likesCount} 회
                 </p>
                 
-                {media.title && (
-                  <p className="text-sm">
-                    <span className="font-semibold">{getAuthorName(media.author_role)}</span>{' '}
-                    {media.title}
-                  </p>
-                )}
-                
-                {media.content && (
-                  <p className="text-sm text-muted-foreground">{media.content}</p>
-                )}
+                <p className="text-sm line-clamp-2">
+                  <span className="font-semibold">{getAuthorName(media.author_role)}</span>
+                  {media.title && <>{' '}{media.title}</>}
+                  {media.content && <>{' '}{media.content}</>}
+                </p>
                 
                 <button
                   onClick={() => handleMediaClick(media)}
@@ -511,7 +523,7 @@ const StorySection = () => {
       )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] p-0">
+        <DialogContent className="max-w-5xl max-h-[90vh] p-0 overflow-hidden">
           <Button
             variant="ghost"
             size="icon"
@@ -522,11 +534,12 @@ const StorySection = () => {
           </Button>
           
           <div className="grid md:grid-cols-2 h-full">
-            <div className="bg-black flex items-center justify-center p-4">
+            <div className="bg-black flex items-center justify-center overflow-hidden" style={{ border: 'none', outline: 'none' }}>
               <img
                 src={selectedMedia?.url}
                 alt={selectedMedia?.title}
                 className="max-w-full max-h-[80vh] object-contain"
+                style={{ border: 'none', outline: 'none' }}
               />
             </div>
 
@@ -609,22 +622,20 @@ const StorySection = () => {
                 </p>
                 
                 <form onSubmit={handleCommentSubmit} className="px-4 pb-4 space-y-2">
-                  <div className="flex gap-2">
-                    <Input
-                      name="writer"
-                      placeholder="작성자"
-                      required
-                      className="flex-1"
-                    />
-                  </div>
+                  <Input
+                    name="writer"
+                    placeholder="작성자"
+                    required
+                    className="w-full h-[60px]"
+                  />
                   <div className="flex gap-2">
                     <Textarea
                       name="content"
                       placeholder="댓글 달기..."
                       required
-                      className="flex-1 min-h-[60px] resize-none"
+                      className="flex-1 h-[60px] resize-none"
                     />
-                    <Button type="submit" size="sm" className="self-end">
+                    <Button type="submit" size="sm" className="h-[60px]">
                       게시
                     </Button>
                   </div>
@@ -647,10 +658,20 @@ const StorySection = () => {
                   id: editingPost?.id,
                   title: formData.get("title") as string,
                   content: formData.get("content") as string,
+                  authorName: formData.get("authorName") as string,
                 });
               }}
               className="space-y-4"
             >
+              <div>
+                <Label htmlFor="authorName">작성자</Label>
+                <Input
+                  id="authorName"
+                  name="authorName"
+                  defaultValue={editingPost?.author_name || getAuthorName(editingPost?.author_role)}
+                  placeholder="이학인 또는 고다희"
+                />
+              </div>
               <div>
                 <Label htmlFor="title">제목</Label>
                 <Input
