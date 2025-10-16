@@ -16,10 +16,7 @@ const HeroSection = () => {
   const { data: invitation, refetch } = useQuery({
     queryKey: ["invitation"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("invitation")
-        .select("*")
-        .single();
+      const { data, error } = await supabase.from("invitation").select("*").single();
       if (error) throw error;
       return data;
     },
@@ -27,14 +24,12 @@ const HeroSection = () => {
 
   useEffect(() => {
     const checkAdmin = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
 
       setIsAdmin(profile?.role === "admin");
     };
@@ -44,7 +39,7 @@ const HeroSection = () => {
 
   // Typing animation with two phases
   useEffect(() => {
-    const firstText = "우리, 결혼합니다";
+    const firstText = "우리, 결혼합니다.";
     const secondText = invitation?.hero_line1 || "우리, 마주보다.";
     let currentIndex = 0;
     let isTyping = true;
@@ -114,14 +109,7 @@ const HeroSection = () => {
                 style={{ border: 0 }}
               />
             ) : (
-              <video
-                autoPlay
-                muted
-                loop
-                playsInline
-                className="w-full h-full object-cover"
-                src={backgroundVideo}
-              />
+              <video autoPlay muted loop playsInline className="w-full h-full object-cover" src={backgroundVideo} />
             )}
           </div>
           <div className="absolute inset-0 bg-black/40 z-0" />
@@ -129,11 +117,7 @@ const HeroSection = () => {
       )}
 
       {isAdmin && showEdit && (
-        <Button
-          onClick={() => setEditModalOpen(true)}
-          className="absolute top-20 right-4 z-10"
-          size="sm"
-        >
+        <Button onClick={() => setEditModalOpen(true)} className="absolute top-20 right-4 z-10" size="sm">
           <Edit className="w-4 h-4 mr-2" />
           편집
         </Button>
@@ -152,11 +136,7 @@ const HeroSection = () => {
         </div>
       </div>
 
-      <HeroEditModal
-        open={editModalOpen}
-        onOpenChange={setEditModalOpen}
-        onSave={handleSave}
-      />
+      <HeroEditModal open={editModalOpen} onOpenChange={setEditModalOpen} onSave={handleSave} />
     </section>
   );
 };
