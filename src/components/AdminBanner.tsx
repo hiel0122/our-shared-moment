@@ -11,27 +11,32 @@ const AdminBanner = () => {
   useEffect(() => {
     const checkAdmin = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      setIsAdmin(profile?.role === "admin");
+      // Check if user is one of the admin emails
+      const adminEmails = ['sinrang@sinrang.com', 'sinboo@sinboo.com'];
+      const isAdminUser = adminEmails.includes(user.email || '');
+      setIsAdmin(isAdminUser);
     };
 
     checkAdmin();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      checkAdmin();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        setIsAdmin(false);
+      } else {
+        checkAdmin();
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   const handleLogout = async () => {
+    setIsAdmin(false); // Immediately hide banner
     await supabase.auth.signOut();
     toast.success("관리자 모드로부터 로그아웃 되었습니다.");
     navigate("/");

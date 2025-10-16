@@ -16,27 +16,30 @@ export type Database = {
     Tables: {
       comments: {
         Row: {
+          commenter_id: string | null
           content: string
           created_at: string
           id: string
           media_id: string | null
-          password_hash: string
+          password_hash: string | null
           writer: string
         }
         Insert: {
+          commenter_id?: string | null
           content: string
           created_at?: string
           id?: string
           media_id?: string | null
-          password_hash: string
+          password_hash?: string | null
           writer: string
         }
         Update: {
+          commenter_id?: string | null
           content?: string
           created_at?: string
           id?: string
           media_id?: string | null
-          password_hash?: string
+          password_hash?: string | null
           writer?: string
         }
         Relationships: [
@@ -91,6 +94,7 @@ export type Database = {
       media_assets: {
         Row: {
           author_name: string | null
+          author_role: Database["public"]["Enums"]["author_role"]
           content: string | null
           created_at: string
           id: string
@@ -102,6 +106,7 @@ export type Database = {
         }
         Insert: {
           author_name?: string | null
+          author_role?: Database["public"]["Enums"]["author_role"]
           content?: string | null
           created_at?: string
           id?: string
@@ -113,6 +118,7 @@ export type Database = {
         }
         Update: {
           author_name?: string | null
+          author_role?: Database["public"]["Enums"]["author_role"]
           content?: string | null
           created_at?: string
           id?: string
@@ -208,6 +214,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "guest"
+      author_role: "bride" | "groom"
       media_type: "video" | "image" | "text"
       message_target: "groom" | "bride"
     }
@@ -338,6 +345,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "guest"],
+      author_role: ["bride", "groom"],
       media_type: ["video", "image", "text"],
       message_target: ["groom", "bride"],
     },
