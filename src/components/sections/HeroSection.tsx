@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FlipClock } from "@/components/FlipClock";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import HeroEditModal from "@/components/HeroEditModal";
@@ -15,6 +15,9 @@ const HeroSection = () => {
   const [showCursor, setShowCursor] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [cursorStyle, setCursorStyle] = useState({ width: 0, height: 0, x: 0, y: 0 });
+  const line1Ref = useRef<HTMLHeadingElement>(null);
+  const line2Ref = useRef<HTMLParagraphElement>(null);
 
   const { data: invitation, refetch } = useQuery({
     queryKey: ["invitation"],
@@ -40,6 +43,36 @@ const HeroSection = () => {
     checkAdmin();
   }, []);
 
+  // Update cursor position and size based on text metrics
+  const updateCursor = (lineEl: HTMLElement | null, isLine2: boolean) => {
+    if (!lineEl) return;
+    
+    const cs = getComputedStyle(lineEl);
+    const fs = parseFloat(cs.fontSize);
+    const lh = parseFloat(cs.lineHeight) || fs * 1.2;
+    
+    const range = document.createRange();
+    range.selectNodeContents(lineEl);
+    const rects = range.getClientRects();
+    const lastRect = rects[rects.length - 1];
+    
+    if (lastRect) {
+      const lineBox = lineEl.getBoundingClientRect();
+      const parentBox = lineEl.parentElement?.getBoundingClientRect();
+      if (parentBox) {
+        const left = lastRect.right - parentBox.left;
+        const top = lastRect.top - parentBox.top + (lh - (lh * 0.92)) / 2;
+        
+        setCursorStyle({
+          width: fs * 0.08,
+          height: lh * 0.92,
+          x: left,
+          y: top
+        });
+      }
+    }
+  };
+
   // Check for reduced motion preference
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -62,6 +95,7 @@ const HeroSection = () => {
       setDisplayedLine1(line1Text);
       setDisplayedLine2(line2Text);
       setShowCursor(true);
+      setTimeout(() => updateCursor(line2Ref.current, true), 50);
       return;
     }
 
@@ -75,6 +109,7 @@ const HeroSection = () => {
           // Type line 1
           if (currentIndex <= line1Text.length) {
             setDisplayedLine1(line1Text.slice(0, currentIndex));
+            setTimeout(() => updateCursor(line1Ref.current, false), 10);
             currentIndex++;
           } else {
             // Line 1 complete, wait 1 second before starting line 2
@@ -85,6 +120,7 @@ const HeroSection = () => {
               const line2Interval = setInterval(() => {
                 if (currentIndex <= line2Text.length) {
                   setDisplayedLine2(line2Text.slice(0, currentIndex));
+                  setTimeout(() => updateCursor(line2Ref.current, true), 10);
                   currentIndex++;
                   if (currentIndex > line2Text.length) {
                     setShowCursor(true);
@@ -152,16 +188,7 @@ const HeroSection = () => {
               overflow: 'hidden',
             }}
           >
-            <div
-              className="hero-video-wrap"
-              style={{
-                position: 'absolute',
-                inset: 0,
-                overflow: 'hidden',
-                transform: 'scale(1.10)',
-                willChange: 'transform',
-              }}
-            >
+            <div className="hero-video-wrap">
               {backgroundVideo.includes("youtube.com") || backgroundVideo.includes("youtu.be") ? (
                 <iframe
                   src={getYoutubeEmbedUrl(backgroundVideo)}
@@ -220,6 +247,7 @@ const HeroSection = () => {
           }}
         >
           <h1 
+            ref={line1Ref}
             className="font-bold tracking-wide font-serif whitespace-nowrap"
             style={{ 
               color: '#111',
@@ -232,6 +260,7 @@ const HeroSection = () => {
             {displayedLine1}
           </h1>
           <p 
+            ref={line2Ref}
             className="font-serif font-semibold tracking-wide whitespace-nowrap relative"
             style={{ 
               color: '#111',
@@ -244,18 +273,21 @@ const HeroSection = () => {
             {displayedLine2}
           </p>
           {showCursor && (
-            <span 
-              className="typing-caret"
+            <div
+              aria-hidden="true"
               style={{
                 position: 'absolute',
-                right: '-0.35ch',
-                bottom: '14px',
-                fontSize: 'clamp(1.2rem, 3.8vw, 2.4rem)',
+                left: 0,
+                top: 0,
+                width: `${cursorStyle.width}px`,
+                height: `${cursorStyle.height}px`,
+                transform: `translate(${cursorStyle.x}px, ${cursorStyle.y}px)`,
+                background: '#111',
+                borderRadius: '1px',
                 animation: 'blink 1s step-end infinite',
+                pointerEvents: 'none',
               }}
-            >
-              ▍
-            </span>
+            />
           )}
         </div>
         <div className="pt-8 flex justify-center">
