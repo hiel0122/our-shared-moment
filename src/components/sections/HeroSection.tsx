@@ -153,11 +153,12 @@ const HeroSection = () => {
             }}
           >
             <div
+              className="hero-video-wrap"
               style={{
                 position: 'absolute',
                 inset: 0,
                 overflow: 'hidden',
-                transform: 'scale(1.03)',
+                transform: 'scale(1.10)',
                 willChange: 'transform',
               }}
             >
@@ -209,32 +210,53 @@ const HeroSection = () => {
 
       <div className="text-center space-y-8 max-w-4xl relative z-10 flex flex-col items-center">
         <div 
-          className="inline-flex flex-col items-center gap-2 rounded-3xl px-5 py-3 md:px-7 md:py-4"
+          className="relative inline-flex flex-col items-center gap-2 rounded-3xl"
           style={{
-            background: 'rgba(247, 247, 247, 0.9)',
-            boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
+            background: 'rgba(255, 255, 255, 0.66)',
+            padding: 'clamp(14px, 2.4vw, 26px) clamp(20px, 3.2vw, 36px)',
+            boxShadow: '0 8px 28px rgba(0,0,0,0.16)',
             backdropFilter: 'blur(4px)',
+            minWidth: 'clamp(320px, 52vw, 780px)',
           }}
         >
           <h1 
-            className="text-2xl md:text-5xl font-bold tracking-wide font-serif"
+            className="font-bold tracking-wide font-serif whitespace-nowrap"
             style={{ 
               color: '#111',
-              lineHeight: '1.4',
+              fontSize: 'clamp(2.4rem, 7.2vw, 6.0rem)',
+              lineHeight: '1.15',
+              textShadow: '0 2px 8px rgba(0,0,0,0.35)',
+              fontVariantNumeric: 'tabular-nums',
             }}
           >
             {displayedLine1}
           </h1>
           <p 
-            className="text-lg md:text-2xl font-serif font-semibold tracking-wide"
+            className="font-serif font-semibold tracking-wide whitespace-nowrap relative"
             style={{ 
               color: '#111',
-              lineHeight: '1.4',
+              fontSize: 'clamp(1.2rem, 3.8vw, 2.4rem)',
+              lineHeight: '1.2',
+              textShadow: '0 2px 8px rgba(0,0,0,0.35)',
+              fontVariantNumeric: 'tabular-nums',
             }}
           >
             {displayedLine2}
-            {showCursor && <span className="ml-1">▍</span>}
           </p>
+          {showCursor && (
+            <span 
+              className="typing-caret"
+              style={{
+                position: 'absolute',
+                right: '-0.35ch',
+                bottom: '14px',
+                fontSize: 'clamp(1.2rem, 3.8vw, 2.4rem)',
+                animation: 'blink 1s step-end infinite',
+              }}
+            >
+              ▍
+            </span>
+          )}
         </div>
         <div className="pt-8 flex justify-center">
           <FlipClock targetDate={weddingDate} />

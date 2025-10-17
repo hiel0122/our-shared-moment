@@ -102,3 +102,15 @@ All colors MUST be HSL.
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap');
+
+@media (max-width: 768px) {
+  .hero-video-wrap {
+    transform: scale(1.12) !important;
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
