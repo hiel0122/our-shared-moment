@@ -108,15 +108,15 @@ All colors MUST be HSL.
   inset: 0;
   overflow: hidden;
   transform-origin: center center;
-  transform: translateX(var(--hero-shift-x, -1.5vw)) scale(var(--hero-scale, 1.12));
+  transform: translateX(var(--hero-shift-x, -1.5vw)) scale(var(--hero-scale, 1.14));
   will-change: transform;
 }
 
 /* 가로가 긴 화면(좌측 블랭크 발생 확률↑) */
 @media (min-aspect-ratio: 16/9) {
   .hero-video-wrap {
-    --hero-shift-x: -2.2vw;
-    --hero-scale: 1.12;
+    --hero-shift-x: -2.0vw;
+    --hero-scale: 1.14;
   }
 }
 
@@ -124,7 +124,7 @@ All colors MUST be HSL.
 @media (max-aspect-ratio: 16/9) {
   .hero-video-wrap {
     --hero-shift-x: -1.0vw;
-    --hero-scale: 1.15;
+    --hero-scale: 1.17;
   }
 }
 

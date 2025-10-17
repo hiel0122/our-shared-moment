@@ -10,14 +10,12 @@ const HeroSection = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [displayedLine1, setDisplayedLine1] = useState("");
-  const [displayedLine2, setDisplayedLine2] = useState("");
+  const [displayedText, setDisplayedText] = useState("");
   const [showCursor, setShowCursor] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [cursorStyle, setCursorStyle] = useState({ width: 0, height: 0, x: 0, y: 0 });
-  const line1Ref = useRef<HTMLHeadingElement>(null);
-  const line2Ref = useRef<HTMLParagraphElement>(null);
+  const lineRef = useRef<HTMLHeadingElement>(null);
 
   const { data: invitation, refetch } = useQuery({
     queryKey: ["invitation"],
@@ -44,7 +42,7 @@ const HeroSection = () => {
   }, []);
 
   // Update cursor position and size based on text metrics
-  const updateCursor = (lineEl: HTMLElement | null, isLine2: boolean) => {
+  const updateCursor = (lineEl: HTMLElement | null) => {
     if (!lineEl) return;
     
     const cs = getComputedStyle(lineEl);
@@ -61,11 +59,11 @@ const HeroSection = () => {
       const parentBox = lineEl.parentElement?.getBoundingClientRect();
       if (parentBox) {
         const left = lastRect.right - parentBox.left;
-        const top = lastRect.top - parentBox.top + (lh - (lh * 0.92)) / 2;
+        const top = lastRect.top - parentBox.top + (lh - (lh * 0.9)) / 2;
         
         setCursorStyle({
           width: fs * 0.08,
-          height: lh * 0.92,
+          height: lh * 0.9,
           x: left,
           y: top
         });
@@ -83,62 +81,58 @@ const HeroSection = () => {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  // Two-line typing animation - starts after video loads
+  // Three-stage typing sequence - starts after video loads
   useEffect(() => {
     if (!videoLoaded) return;
 
-    const line1Text = invitation?.hero_line1 || "우리, 마주서다.";
-    const line2Text = invitation?.hero_line2 || "2026.12.5, 우리가 마주보는 시간.";
+    const sequences = [
+      "우리, 결혼할 수 있을까...?",
+      "우리 결혼하자.",
+      invitation?.hero_line1 || "우리, 마주서다."
+    ];
 
-    // If reduced motion, show all text immediately with cursor
+    // If reduced motion, show final text immediately with cursor
     if (prefersReducedMotion) {
-      setDisplayedLine1(line1Text);
-      setDisplayedLine2(line2Text);
+      setDisplayedText(sequences[sequences.length - 1]);
       setShowCursor(true);
-      setTimeout(() => updateCursor(line2Ref.current, true), 50);
+      setTimeout(() => updateCursor(lineRef.current), 50);
       return;
     }
 
-    // Wait 1 second after video loads before starting typing
-    const startDelay = setTimeout(() => {
-      let currentIndex = 0;
-      let isLine1Complete = false;
+    const runTypingSequence = async () => {
+      // Wait 1 second after video loads before starting typing
+      await new Promise(r => setTimeout(r, 1000));
 
-      const typingInterval = setInterval(() => {
-        if (!isLine1Complete) {
-          // Type line 1
-          if (currentIndex <= line1Text.length) {
-            setDisplayedLine1(line1Text.slice(0, currentIndex));
-            setTimeout(() => updateCursor(line1Ref.current, false), 10);
-            currentIndex++;
-          } else {
-            // Line 1 complete, wait 1 second before starting line 2
-            isLine1Complete = true;
-            currentIndex = 0;
-            setTimeout(() => {
-              // Start line 2
-              const line2Interval = setInterval(() => {
-                if (currentIndex <= line2Text.length) {
-                  setDisplayedLine2(line2Text.slice(0, currentIndex));
-                  setTimeout(() => updateCursor(line2Ref.current, true), 10);
-                  currentIndex++;
-                  if (currentIndex > line2Text.length) {
-                    setShowCursor(true);
-                    clearInterval(line2Interval);
-                  }
-                }
-              }, 150); // 15-20% slower
-            }, 1000);
-            clearInterval(typingInterval);
-          }
+      for (let seqIndex = 0; seqIndex < sequences.length; seqIndex++) {
+        const text = sequences[seqIndex];
+        
+        // Type sequence
+        for (let i = 0; i <= text.length; i++) {
+          setDisplayedText(text.slice(0, i));
+          await new Promise(r => setTimeout(r, 115)); // ~1.3x faster than 150ms
+          setTimeout(() => updateCursor(lineRef.current), 10);
         }
-      }, 150); // 15-20% slower than original 130ms
+        
+        // Hold the complete text
+        await new Promise(r => setTimeout(r, 800));
+        
+        // Delete sequence (unless it's the last one)
+        if (seqIndex < sequences.length - 1) {
+          for (let i = text.length; i >= 0; i--) {
+            setDisplayedText(text.slice(0, i));
+            await new Promise(r => setTimeout(r, 20)); // Fast delete
+            setTimeout(() => updateCursor(lineRef.current), 10);
+          }
+          await new Promise(r => setTimeout(r, 200)); // Brief pause before next sequence
+        } else {
+          // Final sequence - keep cursor blinking
+          setShowCursor(true);
+        }
+      }
+    };
 
-      return () => clearInterval(typingInterval);
-    }, 1000);
-
-    return () => clearTimeout(startDelay);
-  }, [invitation?.hero_line1, invitation?.hero_line2, videoLoaded, prefersReducedMotion]);
+    runTypingSequence();
+  }, [invitation?.hero_line1, videoLoaded, prefersReducedMotion]);
 
   // Cursor blink
   useEffect(() => {
@@ -237,17 +231,18 @@ const HeroSection = () => {
 
       <div className="text-center space-y-8 max-w-4xl relative z-10 flex flex-col items-center">
         <div 
-          className="relative inline-flex flex-col items-center gap-2 rounded-3xl"
+          className="relative inline-flex flex-col items-center justify-center gap-2 rounded-3xl"
           style={{
             background: 'rgba(255, 255, 255, 0.66)',
             padding: 'clamp(14px, 2.4vw, 26px) clamp(20px, 3.2vw, 36px)',
             boxShadow: '0 8px 28px rgba(0,0,0,0.16)',
             backdropFilter: 'blur(4px)',
-            minWidth: 'clamp(320px, 52vw, 780px)',
+            width: 'clamp(320px, 52vw, 820px)',
+            height: 'clamp(120px, 16vw, 180px)',
           }}
         >
           <h1 
-            ref={line1Ref}
+            ref={lineRef}
             className="font-bold tracking-wide font-serif whitespace-nowrap"
             style={{ 
               color: '#111',
@@ -257,21 +252,8 @@ const HeroSection = () => {
               fontVariantNumeric: 'tabular-nums',
             }}
           >
-            {displayedLine1}
+            {displayedText}
           </h1>
-          <p 
-            ref={line2Ref}
-            className="font-serif font-semibold tracking-wide whitespace-nowrap relative"
-            style={{ 
-              color: '#111',
-              fontSize: 'clamp(1.2rem, 3.8vw, 2.4rem)',
-              lineHeight: '1.2',
-              textShadow: '0 2px 8px rgba(0,0,0,0.35)',
-              fontVariantNumeric: 'tabular-nums',
-            }}
-          >
-            {displayedLine2}
-          </p>
           {showCursor && (
             <div
               aria-hidden="true"
