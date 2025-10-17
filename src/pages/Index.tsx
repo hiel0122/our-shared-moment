@@ -1,4 +1,5 @@
 import HeroSection from "@/components/sections/HeroSection";
+import IntroTextSection from "@/components/IntroTextSection";
 import StorySection from "@/components/sections/StorySection";
 import LocationSection from "@/components/sections/LocationSection";
 import MessageSection from "@/components/sections/MessageSection";
@@ -11,6 +12,7 @@ const Index = () => {
       <AdminBanner />
       <div className="pt-0">
         <HeroSection />
+        <IntroTextSection />
         <div className="max-w-7xl mx-auto px-4 space-y-8 py-8">
           <div className="section-block p-6 md:p-8">
             <StorySection />

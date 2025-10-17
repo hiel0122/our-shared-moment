@@ -68,15 +68,26 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-[url('https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070')] bg-cover bg-center bg-fixed text-foreground;
     position: relative;
+    @apply text-foreground;
   }
 
   body::before {
     content: '';
     position: fixed;
     inset: 0;
-    background: hsl(0 0% 100% / 0.85);
+    background-image: url('./assets/wedding-background.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    z-index: -2;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: hsl(0 0% 100% / 0.2);
     backdrop-filter: blur(2px);
     z-index: -1;
   }

@@ -54,38 +54,53 @@ export type Database = {
       }
       invitation: {
         Row: {
+          bride_father: string | null
+          bride_mother: string | null
           couple_bride: string
           couple_groom: string
           created_at: string
+          groom_father: string | null
+          groom_mother: string | null
           hero_line1: string
           hero_line2: string
           hero_line3: string
           hero_video_url: string | null
           id: string
+          intro_text: string | null
           updated_at: string
           wedding_at: string
         }
         Insert: {
+          bride_father?: string | null
+          bride_mother?: string | null
           couple_bride?: string
           couple_groom?: string
           created_at?: string
+          groom_father?: string | null
+          groom_mother?: string | null
           hero_line1?: string
           hero_line2?: string
           hero_line3?: string
           hero_video_url?: string | null
           id?: string
+          intro_text?: string | null
           updated_at?: string
           wedding_at?: string
         }
         Update: {
+          bride_father?: string | null
+          bride_mother?: string | null
           couple_bride?: string
           couple_groom?: string
           created_at?: string
+          groom_father?: string | null
+          groom_mother?: string | null
           hero_line1?: string
           hero_line2?: string
           hero_line3?: string
           hero_video_url?: string | null
           id?: string
+          intro_text?: string | null
           updated_at?: string
           wedding_at?: string
         }

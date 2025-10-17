@@ -11,6 +11,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Plus, Trash2, Heart, MessageCircle, Edit2, Send, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import MediaUploadModal from "@/components/MediaUploadModal";
 
 const StorySection = () => {
   const queryClient = useQueryClient();
@@ -23,6 +24,7 @@ const StorySection = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [commenterId, setCommenterId] = useState<string>("");
   const [actorId, setActorId] = useState<string>("");
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const itemsPerPage = 6;
 
   useEffect(() => {
@@ -384,7 +386,7 @@ const StorySection = () => {
 
       {isAdmin && (
         <div className="flex flex-col items-center mb-6 gap-2">
-          <Button onClick={() => { /* Add post logic */ }}>
+          <Button onClick={() => setUploadModalOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             게시물 추가
           </Button>
@@ -655,6 +657,14 @@ const StorySection = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <MediaUploadModal
+        open={uploadModalOpen}
+        onOpenChange={setUploadModalOpen}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["mediaAssets"] });
+        }}
+      />
     </section>
   );
 };

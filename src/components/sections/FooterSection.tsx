@@ -27,26 +27,39 @@ const FooterSection = () => {
     <footer className="py-20 px-4 bg-muted">
       <div className="max-w-4xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
-          <div className="space-y-2">
-            <span 
-              onClick={handleGroomClick}
-              className="text-lg font-medium cursor-pointer block"
-              style={{ 
-                textDecoration: 'none',
-                color: 'inherit'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.textDecoration = 'none';
-                e.currentTarget.style.color = 'inherit';
-              }}
-            >
-              신랑 {invitation?.couple_groom || "이학인"}
-            </span>
-            <p className="text-lg font-medium">
-              신부 {invitation?.couple_bride || "고다희"}
-            </p>
-            <p className="text-sm text-muted-foreground mt-4">
-              {invitation?.hero_line3 || "6년의 만남, 그리고 새로운 시작"}
+          <div className="space-y-3">
+            <div className="flex flex-col gap-1" style={{ fontSize: '0.9em' }}>
+              <p className="text-foreground/90">
+                <span 
+                  onClick={handleGroomClick}
+                  className="cursor-pointer"
+                  style={{ 
+                    textDecoration: 'none',
+                  }}
+                >
+                  {invitation?.groom_father || "이양규"}, {invitation?.groom_mother || "한나미"}
+                </span>
+                {" "}의 장남
+              </p>
+              <p className="text-foreground font-medium">
+                <span 
+                  onClick={handleGroomClick}
+                  className="cursor-pointer"
+                >
+                  신랑 {invitation?.couple_groom || "이학인"}
+                </span>
+              </p>
+            </div>
+            <div className="flex flex-col gap-1" style={{ fontSize: '0.9em' }}>
+              <p className="text-foreground/90">
+                {invitation?.bride_father || "고범석"}, {invitation?.bride_mother || "장은경"} 의 장녀
+              </p>
+              <p className="text-foreground font-medium">
+                신부 {invitation?.couple_bride || "고다희"}
+              </p>
+            </div>
+            <p className="text-sm text-center text-muted-foreground mt-4 italic" style={{ fontSize: '0.85em' }}>
+              "{invitation?.hero_line3 || "6년의 만남, 그리고 새로운 시작을 응원해주세요"}"
             </p>
           </div>
           
