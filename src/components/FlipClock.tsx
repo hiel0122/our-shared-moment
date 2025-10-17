@@ -9,15 +9,11 @@ const FlipUnit = ({ value, label }: FlipUnitProps) => {
   const formattedValue = String(value).padStart(2, "0");
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="relative w-16 h-20 md:w-20 md:h-24">
-        <div className="absolute inset-0 bg-card border border-border rounded-lg shadow-md flex items-center justify-center transition-opacity duration-200">
-          <span className="text-3xl md:text-4xl font-mono font-bold">
-            {formattedValue}
-          </span>
-        </div>
-      </div>
-      <span className="text-xs md:text-sm text-muted-foreground font-light">
+    <div className="flex flex-col justify-between items-center bg-white rounded-xl p-3 shadow-md" style={{ height: '72px', minWidth: '56px' }}>
+      <span className="text-2xl md:text-3xl font-mono font-bold text-foreground">
+        {formattedValue}
+      </span>
+      <span className="text-xs text-foreground/75 font-light">
         {label}
       </span>
     </div>
@@ -70,13 +66,13 @@ export const FlipClock = ({ targetDate }: FlipClockProps) => {
   }
 
   return (
-    <div className="flex gap-2 md:gap-4">
+    <div className="flex gap-2 md:gap-4 items-center">
       <FlipUnit value={timeLeft.days} label="일" />
-      <span className="text-2xl md:text-3xl font-light self-start pt-6">:</span>
+      <span className="text-2xl md:text-3xl font-light text-white">:</span>
       <FlipUnit value={timeLeft.hours} label="시간" />
-      <span className="text-2xl md:text-3xl font-light self-start pt-6">:</span>
+      <span className="text-2xl md:text-3xl font-light text-white">:</span>
       <FlipUnit value={timeLeft.minutes} label="분" />
-      <span className="text-2xl md:text-3xl font-light self-start pt-6">:</span>
+      <span className="text-2xl md:text-3xl font-light text-white">:</span>
       <FlipUnit value={timeLeft.seconds} label="초" />
     </div>
   );

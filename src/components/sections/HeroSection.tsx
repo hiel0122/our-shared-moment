@@ -10,9 +10,11 @@ const HeroSection = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [displayedText, setDisplayedText] = useState("");
-  const [showCursor, setShowCursor] = useState(true);
+  const [displayedLine1, setDisplayedLine1] = useState("");
+  const [displayedLine2, setDisplayedLine2] = useState("");
+  const [showCursor, setShowCursor] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   const { data: invitation, refetch } = useQuery({
     queryKey: ["invitation"],
@@ -38,41 +40,59 @@ const HeroSection = () => {
     checkAdmin();
   }, []);
 
-  // Typing animation with two phases - starts after video loads
+  // Check for reduced motion preference
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+    
+    const handleChange = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  // Two-line typing animation - starts after video loads
   useEffect(() => {
     if (!videoLoaded) return;
 
+    const line1Text = invitation?.hero_line1 || "우리, 마주서다.";
+    const line2Text = invitation?.hero_line2 || "2026.12.5, 우리가 마주보는 시간.";
+
+    // If reduced motion, show all text immediately with cursor
+    if (prefersReducedMotion) {
+      setDisplayedLine1(line1Text);
+      setDisplayedLine2(line2Text);
+      setShowCursor(true);
+      return;
+    }
+
     // Wait 1 second after video loads before starting typing
     const startDelay = setTimeout(() => {
-      const firstText = "우리, 결혼합니다.";
-      const secondText = invitation?.hero_line1 || "우리, 마주보다.";
       let currentIndex = 0;
-      let isTyping = true;
-      let isFirstPhase = true;
+      let isLine1Complete = false;
 
       const typingInterval = setInterval(() => {
-        if (isFirstPhase) {
-          if (isTyping && currentIndex <= firstText.length) {
-            setDisplayedText(firstText.slice(0, currentIndex));
-            currentIndex++;
-          } else if (isTyping && currentIndex > firstText.length) {
-            setTimeout(() => {
-              isTyping = false;
-              currentIndex = firstText.length;
-            }, 1000);
-          } else if (!isTyping && currentIndex > 0) {
-            currentIndex--;
-            setDisplayedText(firstText.slice(0, currentIndex));
-          } else if (!isTyping && currentIndex === 0) {
-            isFirstPhase = false;
-            isTyping = true;
-            currentIndex = 0;
-          }
-        } else {
-          if (currentIndex <= secondText.length) {
-            setDisplayedText(secondText.slice(0, currentIndex));
+        if (!isLine1Complete) {
+          // Type line 1
+          if (currentIndex <= line1Text.length) {
+            setDisplayedLine1(line1Text.slice(0, currentIndex));
             currentIndex++;
           } else {
+            // Line 1 complete, wait 1 second before starting line 2
+            isLine1Complete = true;
+            currentIndex = 0;
+            setTimeout(() => {
+              // Start line 2
+              const line2Interval = setInterval(() => {
+                if (currentIndex <= line2Text.length) {
+                  setDisplayedLine2(line2Text.slice(0, currentIndex));
+                  currentIndex++;
+                  if (currentIndex > line2Text.length) {
+                    setShowCursor(true);
+                    clearInterval(line2Interval);
+                  }
+                }
+              }, 150); // 15-20% slower
+            }, 1000);
             clearInterval(typingInterval);
           }
         }
@@ -82,7 +102,7 @@ const HeroSection = () => {
     }, 1000);
 
     return () => clearTimeout(startDelay);
-  }, [invitation?.hero_line1, videoLoaded]);
+  }, [invitation?.hero_line1, invitation?.hero_line2, videoLoaded, prefersReducedMotion]);
 
   // Cursor blink
   useEffect(() => {
@@ -101,7 +121,7 @@ const HeroSection = () => {
     if (!url) return "";
     const videoId = url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([^&?\/\s]+)/)?.[1];
     if (!videoId) return url;
-    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&playsinline=1&controls=0&modestbranding=1&rel=0&showinfo=0`;
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&playsinline=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3&fs=0&disablekb=1&enablejsapi=1`;
   };
 
   const handleSave = (videoUrl: string) => {
@@ -129,38 +149,47 @@ const HeroSection = () => {
             style={{
               width: '100vw',
               height: '100vh',
+              overflow: 'hidden',
             }}
           >
-            {backgroundVideo.includes("youtube.com") || backgroundVideo.includes("youtu.be") ? (
-              <iframe
-                src={getYoutubeEmbedUrl(backgroundVideo)}
-                className="w-full h-full"
-                allow="autoplay; encrypted-media"
-                style={{ 
-                  border: 0,
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  width: '100vw',
-                  height: '100vh',
-                  transform: 'translate(-50%, -50%)',
-                  objectFit: 'cover',
-                  minWidth: '100%',
-                  minHeight: '100%',
-                }}
-                onLoad={() => setVideoLoaded(true)}
-              />
-            ) : (
-              <video 
-                autoPlay 
-                muted 
-                loop 
-                playsInline 
-                className="w-full h-full object-cover" 
-                src={backgroundVideo}
-                onLoadedData={() => setVideoLoaded(true)}
-              />
-            )}
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                overflow: 'hidden',
+                transform: 'scale(1.03)',
+                willChange: 'transform',
+              }}
+            >
+              {backgroundVideo.includes("youtube.com") || backgroundVideo.includes("youtu.be") ? (
+                <iframe
+                  src={getYoutubeEmbedUrl(backgroundVideo)}
+                  allow="autoplay; encrypted-media"
+                  style={{ 
+                    border: 0,
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    aspectRatio: '16/9',
+                    minWidth: '100%',
+                    minHeight: '100%',
+                  }}
+                  onLoad={() => setVideoLoaded(true)}
+                />
+              ) : (
+                <video 
+                  autoPlay 
+                  muted 
+                  loop 
+                  playsInline 
+                  className="w-full h-full object-cover" 
+                  src={backgroundVideo}
+                  onLoadedData={() => setVideoLoaded(true)}
+                />
+              )}
+            </div>
           </div>
           <div 
             className="absolute inset-0 z-0 transition-opacity duration-600"
@@ -178,20 +207,35 @@ const HeroSection = () => {
         </Button>
       )}
 
-      <div className="text-center space-y-8 max-w-4xl relative z-10">
-        <h1 
-          className="text-3xl md:text-7xl font-bold tracking-wide font-serif text-white"
-          style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}
+      <div className="text-center space-y-8 max-w-4xl relative z-10 flex flex-col items-center">
+        <div 
+          className="inline-flex flex-col items-center gap-2 rounded-3xl px-5 py-3 md:px-7 md:py-4"
+          style={{
+            background: 'rgba(247, 247, 247, 0.9)',
+            boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
+            backdropFilter: 'blur(4px)',
+          }}
         >
-          {displayedText}
-          <span className={`ml-1 ${showCursor ? "opacity-100" : "opacity-0"}`}>|</span>
-        </h1>
-        <p 
-          className="text-xl md:text-3xl font-serif font-semibold tracking-wide text-white"
-          style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}
-        >
-          {invitation?.hero_line2 || "2026년 12월 5일, 우리가 마주보는 시간"}
-        </p>
+          <h1 
+            className="text-2xl md:text-5xl font-bold tracking-wide font-serif"
+            style={{ 
+              color: '#111',
+              lineHeight: '1.4',
+            }}
+          >
+            {displayedLine1}
+          </h1>
+          <p 
+            className="text-lg md:text-2xl font-serif font-semibold tracking-wide"
+            style={{ 
+              color: '#111',
+              lineHeight: '1.4',
+            }}
+          >
+            {displayedLine2}
+            {showCursor && <span className="ml-1">▍</span>}
+          </p>
+        </div>
         <div className="pt-8 flex justify-center">
           <FlipClock targetDate={weddingDate} />
         </div>
