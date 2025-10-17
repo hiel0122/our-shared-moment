@@ -380,7 +380,7 @@ const StorySection = () => {
 
   return (
     <section id="story-section" className="py-16 px-4">
-      <h2 className="text-4xl font-bold mb-6 text-center">우리, 마주보기 전엔…</h2>
+      <h2 className="text-3xl md:text-4xl font-bold text-center mb-8 font-serif">우리, 마주보기 전엔…</h2>
 
       {isAdmin && (
         <div className="flex flex-col items-center mb-6 gap-2">
@@ -457,7 +457,7 @@ const StorySection = () => {
               </div>
 
               {/* Action Bar - White background */}
-              <div className="h-12 bg-background border-t flex items-center gap-4 px-4">
+              <div className="h-12 bg-background border-t flex items-center gap-2 px-4">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -484,7 +484,7 @@ const StorySection = () => {
               </div>
 
               {/* Meta/Caption Area */}
-              <div className="p-4 space-y-1">
+              <div className="p-4 space-y-0.5">
                 <p className="text-sm font-bold">
                   좋아요 {likesCount} 회
                 </p>
@@ -523,7 +523,7 @@ const StorySection = () => {
       )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] p-0 overflow-hidden">
+        <DialogContent className="max-w-5xl max-h-[90vh] p-0 overflow-hidden border-none [&>button]:hidden">
           <Button
             variant="ghost"
             size="icon"
@@ -626,17 +626,17 @@ const StorySection = () => {
                     name="writer"
                     placeholder="작성자"
                     required
-                    className="w-full h-[60px]"
+                    className="w-full h-10"
                   />
                   <div className="flex gap-2">
-                    <Textarea
+                    <Input
                       name="content"
                       placeholder="댓글 달기..."
                       required
-                      className="flex-1 h-[60px] resize-none"
+                      className="flex-1 h-10"
                     />
-                    <Button type="submit" size="sm" className="h-[60px]">
-                      게시
+                    <Button type="submit" size="icon" className="h-10 w-10 shrink-0">
+                      <Send className="h-4 w-4" />
                     </Button>
                   </div>
                 </form>
@@ -670,14 +670,6 @@ const StorySection = () => {
                   name="authorName"
                   defaultValue={editingPost?.author_name || getAuthorName(editingPost?.author_role)}
                   placeholder="이학인 또는 고다희"
-                />
-              </div>
-              <div>
-                <Label htmlFor="title">제목</Label>
-                <Input
-                  id="title"
-                  name="title"
-                  defaultValue={editingPost?.title}
                 />
               </div>
               <div>

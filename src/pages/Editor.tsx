@@ -106,10 +106,6 @@ const Editor = () => {
               {loading ? "로그인 중..." : "로그인"}
             </Button>
           </form>
-          <div className="mt-4 text-sm text-muted-foreground text-center">
-            <p>기본 계정: admin@admin.com</p>
-            <p>비밀번호: 123456</p>
-          </div>
         </CardContent>
       </Card>
     </div>
