@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
+
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -394,115 +394,79 @@ const StorySection = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-w-6xl mx-auto">
         {currentMediaAssets.map((media: any) => {
           const mediaLikes = likesData?.[media.id] || [];
           const likesCount = mediaLikes.length;
-          const hasLiked = mediaLikes.some(like => like.actor_id === actorId);
+          const commentsCount = commentsData?.[media.id]?.length || 0;
           
           return (
-            <Card 
+            <div 
               key={media.id} 
-              className="overflow-hidden hover:shadow-lg transition-shadow relative"
+              className="relative group cursor-pointer overflow-hidden aspect-square transition-transform duration-300 ease-in-out hover:scale-[1.03]"
+              onClick={() => handleMediaClick(media)}
             >
-              {/* Header - White bar with profile */}
-              <div className="h-14 bg-background border-b flex items-center justify-between px-4">
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="text-lg">
-                      {getAuthorEmoji(media.author_role)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-semibold text-sm">
-                    {getAuthorName(media.author_role)}
-                  </span>
-                </div>
-                {isAdmin && (
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => {
-                        setEditingPost(media);
-                        setEditDialogOpen(true);
-                      }}
-                    >
-                      <Edit2 className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-destructive"
-                      onClick={() => deletePost.mutate(media.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+              {/* Image */}
+              {media.type === "image" && media.url && (
+                <img
+                  src={media.url}
+                  alt={media.title || "Memory"}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              )}
+              
+              {/* Hover Overlay */}
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-250 flex items-center justify-center">
+                <div className="flex items-center gap-6 text-white font-semibold text-lg">
+                  <div className="flex items-center gap-2">
+                    <Heart className="h-5 w-5 fill-white" />
+                    <span>{likesCount}</span>
                   </div>
-                )}
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="h-5 w-5 fill-white" />
+                    <span>{commentsCount}</span>
+                  </div>
+                </div>
               </div>
 
-              {/* Image - Full width */}
-              <div 
-                className="cursor-pointer"
-                onClick={() => handleMediaClick(media)}
-              >
-                {media.type === "image" && media.url && (
-                  <img
-                    src={media.url}
-                    alt={media.title || "Memory"}
-                    className="w-full aspect-square object-cover"
-                  />
-                )}
-              </div>
-
-              {/* Action Bar - White background */}
-              <div className="h-12 bg-background border-t flex items-center gap-2 px-4">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 p-0 text-foreground/70 hover:text-foreground hover:bg-transparent"
-                  onClick={() => toggleLike.mutate(media.id)}
-                >
-                  <Heart className={`h-6 w-6 transition-all ${hasLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 p-0 text-foreground/70 hover:text-foreground hover:bg-transparent"
-                  onClick={() => handleMediaClick(media)}
-                >
-                  <MessageCircle className="h-6 w-6" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 p-0 text-foreground/70 hover:text-foreground hover:bg-transparent"
-                >
-                  <Send className="h-6 w-6" />
-                </Button>
-              </div>
-
-              {/* Meta/Caption Area */}
-              <div className="p-4 space-y-0.5">
-                <p className="text-sm font-bold">
-                  좋아요 {likesCount} 회
-                </p>
-                
-                <p className="text-sm line-clamp-2">
-                  <span className="font-semibold">{getAuthorName(media.author_role)}</span>
-                  {media.title && <>{' '}{media.title}</>}
-                  {media.content && <>{' '}{media.content}</>}
-                </p>
-                
-                <button
-                  onClick={() => handleMediaClick(media)}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  댓글 {commentsData?.[media.id]?.length || 0} 개 보기
-                </button>
-              </div>
-            </Card>
+              {/* Admin Delete Button */}
+              {isAdmin && (
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-250 z-10">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full bg-black/70 text-white hover:bg-black/90 hover:text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm('이 게시물을 삭제하시겠습니까?')) {
+                        deletePost.mutate(media.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              
+              {/* Admin Edit Button */}
+              {isAdmin && (
+                <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-250 z-10">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full bg-black/70 text-white hover:bg-black/90 hover:text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingPost(media);
+                      setEditDialogOpen(true);
+                    }}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
