@@ -15,7 +15,9 @@ const HeroSection = () => {
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [cursorStyle, setCursorStyle] = useState({ width: 0, height: 0, x: 0, y: 0 });
+  const [boxWidth, setBoxWidth] = useState<number | null>(null);
   const lineRef = useRef<HTMLHeadingElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
 
   const { data: invitation, refetch } = useQuery({
     queryKey: ["invitation"],
@@ -71,6 +73,29 @@ const HeroSection = () => {
     }
   };
 
+  // Auto-resize box based on content width
+  const autosizeBox = () => {
+    if (!lineRef.current || !boxRef.current) return;
+    
+    const box = boxRef.current;
+    const cs = getComputedStyle(box);
+    const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    
+    // Get actual content width
+    const contentWidth = lineRef.current.scrollWidth + padX;
+    
+    // Clamp between min and max widths
+    const minWidth = window.innerWidth < 768 
+      ? Math.min(220, window.innerWidth * 0.8)
+      : Math.min(280, window.innerWidth * 0.44);
+    const maxWidth = window.innerWidth < 768
+      ? window.innerWidth * 0.92
+      : Math.min(920, window.innerWidth * 0.72);
+    
+    const targetWidth = Math.max(minWidth, Math.min(contentWidth, maxWidth));
+    setBoxWidth(targetWidth);
+  };
+
   // Check for reduced motion preference
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -109,8 +134,11 @@ const HeroSection = () => {
         // Type sequence
         for (let i = 0; i <= text.length; i++) {
           setDisplayedText(text.slice(0, i));
-          await new Promise(r => setTimeout(r, 115)); // ~1.3x faster than 150ms
-          setTimeout(() => updateCursor(lineRef.current), 10);
+          await new Promise(r => setTimeout(r, 45)); // Faster typing
+          setTimeout(() => {
+            updateCursor(lineRef.current);
+            autosizeBox();
+          }, 10);
         }
         
         // Hold the complete text
@@ -121,7 +149,10 @@ const HeroSection = () => {
           for (let i = text.length; i >= 0; i--) {
             setDisplayedText(text.slice(0, i));
             await new Promise(r => setTimeout(r, 20)); // Fast delete
-            setTimeout(() => updateCursor(lineRef.current), 10);
+            setTimeout(() => {
+              updateCursor(lineRef.current);
+              autosizeBox();
+            }, 10);
           }
           await new Promise(r => setTimeout(r, 200)); // Brief pause before next sequence
         } else {
@@ -231,14 +262,17 @@ const HeroSection = () => {
 
       <div className="text-center space-y-8 max-w-4xl relative z-10 flex flex-col items-center">
         <div 
-          className="relative inline-flex flex-col items-center justify-center gap-2 rounded-3xl"
+          ref={boxRef}
+          className="relative inline-flex flex-col items-center justify-center gap-2 rounded-3xl transition-all duration-200"
           style={{
-            background: 'rgba(255, 255, 255, 0.66)',
+            background: 'rgba(255, 255, 255, 0.62)',
             padding: 'clamp(14px, 2.4vw, 26px) clamp(20px, 3.2vw, 36px)',
             boxShadow: '0 8px 28px rgba(0,0,0,0.16)',
             backdropFilter: 'blur(4px)',
-            width: 'clamp(320px, 52vw, 820px)',
-            height: 'clamp(120px, 16vw, 180px)',
+            width: boxWidth ? `${boxWidth}px` : 'auto',
+            minWidth: 'clamp(280px, 44vw, 560px)',
+            maxWidth: 'clamp(520px, 72vw, 920px)',
+            height: 'auto',
           }}
         >
           <h1 

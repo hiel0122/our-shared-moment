@@ -128,6 +128,14 @@ All colors MUST be HSL.
   }
 }
 
+/* Mobile-specific hero optimizations */
+@media (max-width: 768px) {
+  .hero-video-wrap {
+    --hero-shift-x: -0.6vw;
+    --hero-scale: 1.20;
+  }
+}
+
 @keyframes blink {
   50% {
     opacity: 0;
