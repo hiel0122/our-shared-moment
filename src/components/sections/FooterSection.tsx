@@ -1,17 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { MouseEvent } from "react";
+import { MouseEvent, useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Edit } from "lucide-react";
+import FooterEditModal from "@/components/FooterEditModal";
 
 const FooterSection = () => {
   const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   const handleGroomClick = (e: MouseEvent<HTMLSpanElement>) => {
     e.preventDefault();
     navigate("/editor");
   };
   
-  const { data: invitation } = useQuery({
+  const { data: invitation, refetch } = useQuery({
     queryKey: ["invitation"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -23,9 +29,48 @@ const FooterSection = () => {
     },
   });
 
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      setIsAdmin(profile?.role === "admin");
+    };
+
+    checkAdmin();
+  }, []);
+
   return (
-    <footer className="py-20 px-4 bg-muted">
+    <footer 
+      className="relative py-20 px-4 bg-muted"
+      onMouseEnter={() => isAdmin && setShowEdit(true)}
+      onMouseLeave={() => setShowEdit(false)}
+    >
+      {isAdmin && showEdit && (
+        <Button
+          onClick={() => setEditModalOpen(true)}
+          className="absolute top-4 right-4 z-10"
+          size="sm"
+        >
+          <Edit className="w-4 h-4 mr-2" />
+          편집
+        </Button>
+      )}
+      
       <div className="max-w-4xl mx-auto">
+        {/* Footer top text - centered and larger */}
+        <div className="text-center mb-12">
+          <p className="text-xl md:text-2xl font-serif text-foreground/90 italic">
+            "{invitation?.hero_line3 || "6년의 만남, 그리고 새로운 시작"}"
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
           <div className="space-y-3">
             <div className="flex flex-col gap-1" style={{ fontSize: '0.9em' }}>
@@ -58,9 +103,6 @@ const FooterSection = () => {
                 신부 {invitation?.couple_bride || "고다희"}
               </p>
             </div>
-            <p className="text-sm text-center text-muted-foreground mt-4 italic" style={{ fontSize: '0.85em' }}>
-              "{invitation?.hero_line3 || "6년의 만남, 그리고 새로운 시작을 응원해주세요"}"
-            </p>
           </div>
           
           <div className="space-y-2">
@@ -88,6 +130,12 @@ const FooterSection = () => {
           </div>
         </div>
       </div>
+
+      <FooterEditModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        onSave={() => refetch()}
+      />
     </footer>
   );
 };

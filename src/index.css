@@ -141,3 +141,16 @@ All colors MUST be HSL.
     opacity: 0;
   }
 }
+
+/* Mobile-specific countdown card sizing */
+@media (max-width: 768px) {
+  .flip-unit {
+    height: 82px !important;
+    min-width: 64px !important;
+    padding: 0.875rem !important;
+  }
+  
+  .flip-unit span:first-child {
+    font-size: clamp(1rem, 3.8vw, 1.4rem) !important;
+  }
+}

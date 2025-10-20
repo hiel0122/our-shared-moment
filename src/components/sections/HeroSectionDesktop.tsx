@@ -106,51 +106,51 @@ const HeroSectionDesktop = () => {
     }
 
     const runTypingSequence = async () => {
-      // Wait 1 second after video loads before starting typing
-      await new Promise(r => setTimeout(r, 1000));
+      // Wait 2 seconds after video loads before starting typing (2x slower)
+      await new Promise(r => setTimeout(r, 2000));
 
-      // Type and delete first two sequences (fast)
+      // Type and delete first two sequences (2x slower)
       for (let seqIndex = 0; seqIndex < 2; seqIndex++) {
         const text = mainSequences[seqIndex];
         setCurrentLine(1);
         
-        // Type sequence (fast)
+        // Type sequence (2x slower: 40ms -> 80ms)
         for (let i = 0; i <= text.length; i++) {
           setLine1Text(text.slice(0, i));
-          await new Promise(r => setTimeout(r, 40));
-          setTimeout(() => updateCursor(line1Ref.current), 10);
+          await new Promise(r => setTimeout(r, 80));
+          setTimeout(() => updateCursor(line1Ref.current), 20);
         }
         
-        // Hold the complete text
-        await new Promise(r => setTimeout(r, 800));
+        // Hold the complete text (2x longer)
+        await new Promise(r => setTimeout(r, 1600));
         
-        // Delete sequence (fast)
+        // Delete sequence (2x slower: 20ms -> 40ms)
         for (let i = text.length; i >= 0; i--) {
           setLine1Text(text.slice(0, i));
-          await new Promise(r => setTimeout(r, 20));
-          setTimeout(() => updateCursor(line1Ref.current), 10);
+          await new Promise(r => setTimeout(r, 40));
+          setTimeout(() => updateCursor(line1Ref.current), 20);
         }
-        await new Promise(r => setTimeout(r, 200)); // Brief pause before next sequence
+        await new Promise(r => setTimeout(r, 400)); // Brief pause before next sequence (2x)
       }
 
-      // Type final main sequence (slower)
+      // Type final main sequence (2x slower: 70ms -> 140ms)
       const finalMainText = mainSequences[2];
       setCurrentLine(1);
       for (let i = 0; i <= finalMainText.length; i++) {
         setLine1Text(finalMainText.slice(0, i));
-        await new Promise(r => setTimeout(r, 70));
-        setTimeout(() => updateCursor(line1Ref.current), 10);
+        await new Promise(r => setTimeout(r, 140));
+        setTimeout(() => updateCursor(line1Ref.current), 20);
       }
 
-      // Wait 1 second, then animate cursor moving to line 2
-      await new Promise(r => setTimeout(r, 1000));
+      // Wait 2 seconds, then animate cursor moving to line 2 (2x longer)
+      await new Promise(r => setTimeout(r, 2000));
       setCurrentLine(2);
 
-      // Type subtitle (slow)
+      // Type subtitle (2x slower: 70ms -> 140ms)
       for (let i = 0; i <= subtitleText.length; i++) {
         setLine2Text(subtitleText.slice(0, i));
-        await new Promise(r => setTimeout(r, 70));
-        setTimeout(() => updateCursor(line2Ref.current), 10);
+        await new Promise(r => setTimeout(r, 140));
+        setTimeout(() => updateCursor(line2Ref.current), 20);
       }
 
       // Keep cursor blinking on line 2
@@ -208,7 +208,7 @@ const HeroSectionDesktop = () => {
               overflow: 'hidden',
             }}
           >
-            <div className="hero-video-wrap">
+            <div className="hero-video-wrap" style={{ transform: 'scale(1.08)', transformOrigin: 'center center' }}>
               {backgroundVideo.includes("youtube.com") || backgroundVideo.includes("youtu.be") ? (
                 <iframe
                   src={getYoutubeEmbedUrl(backgroundVideo)}

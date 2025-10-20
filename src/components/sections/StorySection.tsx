@@ -489,7 +489,7 @@ const StorySection = () => {
       )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] p-0 overflow-hidden border-none [&>button]:hidden">
+        <DialogContent className="max-w-[90vw] w-[1400px] max-h-[90vh] p-0 overflow-hidden border-none [&>button]:hidden">
           <Button
             variant="ghost"
             size="icon"
@@ -592,14 +592,14 @@ const StorySection = () => {
                     name="writer"
                     placeholder="작성자"
                     required
-                    className="w-full h-10"
+                    className="w-full h-10 border-none bg-transparent focus-visible:ring-1 focus-visible:ring-primary/30"
                   />
                   <div className="flex gap-2">
                     <Input
                       name="content"
                       placeholder="댓글 달기..."
                       required
-                      className="flex-1 h-10"
+                      className="flex-1 h-10 border-none bg-transparent focus-visible:ring-1 focus-visible:ring-primary/30"
                     />
                     <Button type="submit" size="icon" className="h-10 w-10 shrink-0">
                       <Send className="h-4 w-4" />

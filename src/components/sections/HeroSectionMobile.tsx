@@ -197,7 +197,8 @@ const HeroSectionMobile = () => {
 
   return (
     <section
-      className="relative min-h-screen flex flex-col items-center justify-center px-4 py-20 pt-32 overflow-hidden bg-black"
+      className="relative flex flex-col items-center justify-center px-4 py-20 pt-32 overflow-hidden bg-black"
+      style={{ height: '100vh' }}
       onMouseEnter={() => isAdmin && setShowEdit(true)}
       onMouseLeave={() => setShowEdit(false)}
     >
@@ -280,7 +281,7 @@ const HeroSectionMobile = () => {
             className="font-bold tracking-wide font-serif whitespace-nowrap"
             style={{ 
               color: '#111',
-              fontSize: 'clamp(2.4rem, 7.2vw, 6.0rem)',
+              fontSize: 'clamp(2.2rem, 7vw, 3.2rem)',
               lineHeight: '1.15',
               textShadow: '0 2px 8px rgba(0,0,0,0.35)',
               fontVariantNumeric: 'tabular-nums',

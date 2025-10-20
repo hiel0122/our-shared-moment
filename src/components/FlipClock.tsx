@@ -9,7 +9,7 @@ const FlipUnit = ({ value, label }: FlipUnitProps) => {
   const formattedValue = String(value).padStart(2, "0");
 
   return (
-    <div className="flex flex-col justify-between items-center bg-white rounded-xl p-3 shadow-md" style={{ height: '72px', minWidth: '56px' }}>
+    <div className="flip-unit flex flex-col justify-between items-center bg-white rounded-xl p-3 shadow-md" style={{ height: '72px', minWidth: '56px' }}>
       <span className="text-2xl md:text-3xl font-mono font-bold text-foreground">
         {formattedValue}
       </span>
